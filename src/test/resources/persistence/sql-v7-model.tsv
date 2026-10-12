@@ -1,0 +1,169 @@
+# Snapshot del modelo SQL v7; referencia de pruebas, no SQL ejecutable.
+T	cuidador	Cuidador	id_cuidador
+C	cuidador	id_cuidador	INT	false	-	true	false
+C	cuidador	nombre	VARCHAR(100)	true	-	false	false
+C	cuidador	email	VARCHAR(150)	false	-	false	false
+C	cuidador	estado	ENUM( 'ACTIVO', 'INACTIVO' )	false	'ACTIVO'	false	false
+C	cuidador	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
+U	cuidador	uq_cuidador_email	email
+T	codigo_acceso	CodigoAcceso	id_codigo_acceso
+C	codigo_acceso	id_codigo_acceso	INT	false	-	true	false
+C	codigo_acceso	email	VARCHAR(150)	false	-	false	false
+C	codigo_acceso	codigo_hash	CHAR(64)	false	-	false	false
+C	codigo_acceso	fecha_expiracion	DATETIME	false	-	false	false
+C	codigo_acceso	intentos	TINYINT UNSIGNED	false	0	false	false
+C	codigo_acceso	usado	TINYINT(1)	false	0	false	false
+C	codigo_acceso	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
+I	codigo_acceso	idx_codigo_acceso_email	email,fecha_creacion
+T	perfil_usuario	PerfilUsuario	id_perfil_usuario
+C	perfil_usuario	id_perfil_usuario	INT	false	-	true	false
+C	perfil_usuario	id_cuidador	INT	false	-	false	false
+C	perfil_usuario	nombre	VARCHAR(60)	false	-	false	false
+C	perfil_usuario	avatar	VARCHAR(255)	true	-	false	false
+C	perfil_usuario	codigo_vinculacion	VARCHAR(20)	false	-	false	false
+C	perfil_usuario	fecha_renovacion_codigo	DATETIME	true	-	false	false
+C	perfil_usuario	estado	ENUM( 'ACTIVO', 'INACTIVO' )	false	'ACTIVO'	false	false
+C	perfil_usuario	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
+F	perfil_usuario	fk_perfil_cuidador	id_cuidador	cuidador	id_cuidador	CASCADE
+U	perfil_usuario	uq_perfil_codigo	codigo_vinculacion
+U	perfil_usuario	uq_perfil_cuidador	id_perfil_usuario,id_cuidador
+I	perfil_usuario	idx_perfil_cuidador_nombre	id_cuidador,nombre
+T	configuracion_perfil	ConfiguracionPerfil	id_perfil_usuario
+C	configuracion_perfil	id_perfil_usuario	INT	false	-	false	false
+C	configuracion_perfil	tamano_texto	ENUM( 'PEQUENO', 'MEDIANO', 'GRANDE' )	false	'MEDIANO'	false	false
+C	configuracion_perfil	alto_contraste	TINYINT(1)	false	0	false	false
+C	configuracion_perfil	lectura_voz	TINYINT(1)	false	1	false	false
+C	configuracion_perfil	recordatorio_minutos	TINYINT UNSIGNED	false	10	false	false
+C	configuracion_perfil	fecha_actualizacion	DATETIME	false	CURRENT_TIMESTAMP	false	true
+F	configuracion_perfil	fk_config_perfil	id_perfil_usuario	perfil_usuario	id_perfil_usuario	CASCADE
+K	configuracion_perfil	chk_config_recordatorio	recordatorio_minutos IN (0,5,10,15,30)
+T	pictograma	Pictograma	id_pictograma
+C	pictograma	id_pictograma	INT	false	-	true	false
+C	pictograma	nombre	VARCHAR(80)	false	-	false	false
+C	pictograma	url_imagen	VARCHAR(255)	false	-	false	false
+C	pictograma	fuente	VARCHAR(60)	true	-	false	false
+U	pictograma	uq_pictograma_nombre	nombre
+T	palabra_clave_pictograma	PalabraClavePictograma	id_palabra_clave_pictograma
+C	palabra_clave_pictograma	id_palabra_clave_pictograma	INT	false	-	true	false
+C	palabra_clave_pictograma	id_pictograma	INT	false	-	false	false
+C	palabra_clave_pictograma	palabra	VARCHAR(60)	false	-	false	false
+F	palabra_clave_pictograma	fk_palabra_pictograma	id_pictograma	pictograma	id_pictograma	CASCADE
+U	palabra_clave_pictograma	uq_palabra_pictograma	id_pictograma,palabra
+I	palabra_clave_pictograma	idx_palabra_pictograma	palabra
+T	plantilla_actividad	PlantillaActividad	id_plantilla_actividad
+C	plantilla_actividad	id_plantilla_actividad	INT	false	-	true	false
+C	plantilla_actividad	nombre	VARCHAR(80)	false	-	false	false
+C	plantilla_actividad	id_pictograma	INT	true	-	false	false
+F	plantilla_actividad	fk_plantilla_pictograma	id_pictograma	pictograma	id_pictograma	SET NULL
+U	plantilla_actividad	uq_plantilla_nombre	nombre
+T	palabra_clave_actividad	PalabraClaveActividad	id_palabra_clave_actividad
+C	palabra_clave_actividad	id_palabra_clave_actividad	INT	false	-	true	false
+C	palabra_clave_actividad	id_plantilla_actividad	INT	false	-	false	false
+C	palabra_clave_actividad	palabra	VARCHAR(60)	false	-	false	false
+F	palabra_clave_actividad	fk_palabra_actividad_plantilla	id_plantilla_actividad	plantilla_actividad	id_plantilla_actividad	CASCADE
+U	palabra_clave_actividad	uq_palabra_actividad	id_plantilla_actividad,palabra
+I	palabra_clave_actividad	idx_palabra_actividad	palabra
+T	plantilla_paso	PlantillaPaso	id_plantilla_paso
+C	plantilla_paso	id_plantilla_paso	INT	false	-	true	false
+C	plantilla_paso	id_plantilla_actividad	INT	false	-	false	false
+C	plantilla_paso	id_pictograma	INT	true	-	false	false
+C	plantilla_paso	orden	SMALLINT UNSIGNED	false	-	false	false
+C	plantilla_paso	descripcion	VARCHAR(120)	false	-	false	false
+F	plantilla_paso	fk_plantilla_paso_plantilla	id_plantilla_actividad	plantilla_actividad	id_plantilla_actividad	CASCADE
+F	plantilla_paso	fk_plantilla_paso_pictograma	id_pictograma	pictograma	id_pictograma	SET NULL
+I	plantilla_paso	idx_plantilla_paso_orden	id_plantilla_actividad,orden
+T	actividad	Actividad	id_actividad
+C	actividad	id_actividad	INT	false	-	true	false
+C	actividad	id_perfil_usuario	INT	false	-	false	false
+C	actividad	id_pictograma	INT	true	-	false	false
+C	actividad	nombre	VARCHAR(80)	false	-	false	false
+C	actividad	hora	TIME	false	-	false	false
+C	actividad	guia_inicial_completada	TINYINT(1)	false	0	false	false
+C	actividad	estado	ENUM( 'ACTIVA', 'INACTIVA' )	false	'ACTIVA'	false	false
+C	actividad	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
+F	actividad	fk_actividad_perfil	id_perfil_usuario	perfil_usuario	id_perfil_usuario	CASCADE
+F	actividad	fk_actividad_pictograma	id_pictograma	pictograma	id_pictograma	SET NULL
+I	actividad	idx_actividad_agenda	id_perfil_usuario,estado,hora
+T	paso_actividad	PasoActividad	id_paso_actividad
+C	paso_actividad	id_paso_actividad	INT	false	-	true	false
+C	paso_actividad	id_actividad	INT	false	-	false	false
+C	paso_actividad	id_pictograma	INT	true	-	false	false
+C	paso_actividad	orden	SMALLINT UNSIGNED	false	-	false	false
+C	paso_actividad	descripcion	VARCHAR(120)	false	-	false	false
+C	paso_actividad	activo	TINYINT(1)	false	1	false	false
+F	paso_actividad	fk_paso_actividad	id_actividad	actividad	id_actividad	CASCADE
+F	paso_actividad	fk_paso_pictograma	id_pictograma	pictograma	id_pictograma	SET NULL
+I	paso_actividad	idx_paso_actividad_orden	id_actividad,orden
+T	dispositivo	Dispositivo	id_dispositivo
+C	dispositivo	id_dispositivo	INT	false	-	true	false
+C	dispositivo	id_perfil_usuario	INT	false	-	false	false
+C	dispositivo	nombre	VARCHAR(80)	false	-	false	false
+C	dispositivo	estado	ENUM( 'ACTIVO', 'DESVINCULADO' )	false	'ACTIVO'	false	false
+C	dispositivo	fecha_vinculacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
+C	dispositivo	fecha_ultima_actividad	DATETIME	true	-	false	false
+C	dispositivo	fecha_desvinculacion	DATETIME	true	-	false	false
+F	dispositivo	fk_dispositivo_perfil	id_perfil_usuario	perfil_usuario	id_perfil_usuario	CASCADE
+I	dispositivo	idx_dispositivo_perfil_estado	id_perfil_usuario,estado
+T	ejecucion_actividad	EjecucionActividad	id_ejecucion_actividad
+C	ejecucion_actividad	id_ejecucion_actividad	INT	false	-	true	false
+C	ejecucion_actividad	id_actividad	INT	false	-	false	false
+C	ejecucion_actividad	fecha	DATE	false	-	false	false
+C	ejecucion_actividad	estado	ENUM( 'EN_PROGRESO', 'COMPLETADA' )	false	'EN_PROGRESO'	false	false
+C	ejecucion_actividad	modo_finalizacion	ENUM( 'GUIADA', 'DIRECTA' )	true	-	false	false
+C	ejecucion_actividad	fecha_inicio	DATETIME	false	CURRENT_TIMESTAMP	false	false
+C	ejecucion_actividad	fecha_fin	DATETIME	true	-	false	false
+F	ejecucion_actividad	fk_ejecucion_actividad	id_actividad	actividad	id_actividad	CASCADE
+U	ejecucion_actividad	uq_ejecucion_actividad_fecha	id_actividad,fecha
+I	ejecucion_actividad	idx_ejecucion_fecha	fecha
+K	ejecucion_actividad	chk_ejecucion_cierre	( estado = 'COMPLETADA' AND modo_finalizacion IS NOT NULL AND fecha_fin IS NOT NULL ) OR ( estado = 'EN_PROGRESO' AND modo_finalizacion IS NULL AND fecha_fin IS NULL )
+T	progreso_paso	ProgresoPaso	id_progreso_paso
+C	progreso_paso	id_progreso_paso	INT	false	-	true	false
+C	progreso_paso	id_ejecucion_actividad	INT	false	-	false	false
+C	progreso_paso	id_paso_actividad	INT	false	-	false	false
+C	progreso_paso	completado	TINYINT(1)	false	0	false	false
+C	progreso_paso	fecha_completado	DATETIME	true	-	false	false
+F	progreso_paso	fk_progreso_ejecucion	id_ejecucion_actividad	ejecucion_actividad	id_ejecucion_actividad	CASCADE
+F	progreso_paso	fk_progreso_paso	id_paso_actividad	paso_actividad	id_paso_actividad	CASCADE
+U	progreso_paso	uq_progreso_ejecucion_paso	id_ejecucion_actividad,id_paso_actividad
+I	progreso_paso	idx_progreso_paso	id_paso_actividad
+T	solicitud_ayuda	SolicitudAyuda	id_solicitud_ayuda
+C	solicitud_ayuda	id_solicitud_ayuda	INT	false	-	true	false
+C	solicitud_ayuda	id_perfil_usuario	INT	false	-	false	false
+C	solicitud_ayuda	id_actividad	INT	true	-	false	false
+C	solicitud_ayuda	id_ejecucion_actividad	INT	true	-	false	false
+C	solicitud_ayuda	id_paso_actividad	INT	true	-	false	false
+C	solicitud_ayuda	fecha_solicitud	DATETIME	false	CURRENT_TIMESTAMP	false	false
+C	solicitud_ayuda	estado	ENUM( 'PENDIENTE', 'ATENDIDA' )	false	'PENDIENTE'	false	false
+C	solicitud_ayuda	fecha_atencion	DATETIME	true	-	false	false
+F	solicitud_ayuda	fk_ayuda_perfil	id_perfil_usuario	perfil_usuario	id_perfil_usuario	CASCADE
+F	solicitud_ayuda	fk_ayuda_actividad	id_actividad	actividad	id_actividad	SET NULL
+F	solicitud_ayuda	fk_ayuda_ejecucion	id_ejecucion_actividad	ejecucion_actividad	id_ejecucion_actividad	SET NULL
+F	solicitud_ayuda	fk_ayuda_paso	id_paso_actividad	paso_actividad	id_paso_actividad	SET NULL
+I	solicitud_ayuda	idx_ayuda_perfil_estado	id_perfil_usuario,estado,fecha_solicitud
+I	solicitud_ayuda	idx_ayuda_actividad	id_actividad,fecha_solicitud
+T	notificacion_cuidador	NotificacionCuidador	id_notificacion_cuidador
+C	notificacion_cuidador	id_notificacion_cuidador	INT	false	-	true	false
+C	notificacion_cuidador	id_cuidador	INT	false	-	false	false
+C	notificacion_cuidador	id_perfil_usuario	INT	false	-	false	false
+C	notificacion_cuidador	tipo	ENUM( 'ACTIVIDAD_COMPLETADA', 'AYUDA_GENERAL', 'AYUDA_CONTEXTUAL' )	false	-	false	false
+C	notificacion_cuidador	titulo	VARCHAR(120)	false	-	false	false
+C	notificacion_cuidador	mensaje	VARCHAR(255)	false	-	false	false
+C	notificacion_cuidador	id_ejecucion_actividad	INT	true	-	false	false
+C	notificacion_cuidador	id_solicitud_ayuda	INT	true	-	false	false
+C	notificacion_cuidador	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
+C	notificacion_cuidador	leida	TINYINT(1)	false	0	false	false
+F	notificacion_cuidador	fk_notif_perfil_cuidador	id_perfil_usuario,id_cuidador	perfil_usuario	id_perfil_usuario,id_cuidador	CASCADE
+F	notificacion_cuidador	fk_notif_ejecucion	id_ejecucion_actividad	ejecucion_actividad	id_ejecucion_actividad	SET NULL
+F	notificacion_cuidador	fk_notif_solicitud	id_solicitud_ayuda	solicitud_ayuda	id_solicitud_ayuda	SET NULL
+I	notificacion_cuidador	idx_notif_cuidador_fecha	id_cuidador,fecha_creacion
+I	notificacion_cuidador	idx_notif_cuidador_leida	id_cuidador,leida
+T	token_push	TokenPush	id_token_push
+C	token_push	id_token_push	INT	false	-	true	false
+C	token_push	id_cuidador	INT	false	-	false	false
+C	token_push	expo_token	VARCHAR(255)	false	-	false	false
+C	token_push	plataforma	ENUM( 'ANDROID', 'IOS' )	true	-	false	false
+C	token_push	fecha_actualizacion	DATETIME	false	CURRENT_TIMESTAMP	false	true
+F	token_push	fk_token_cuidador	id_cuidador	cuidador	id_cuidador	CASCADE
+U	token_push	uq_token_push	expo_token
+I	token_push	idx_token_cuidador	id_cuidador
+

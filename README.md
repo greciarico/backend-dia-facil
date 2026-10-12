@@ -1,5 +1,15 @@
 # Backend DiaFacil
 
+El contrato de los dos endpoints iniciales de autenticacion, sus DTOs y
+respuestas HTTP esta documentado en [docs/auth-http.md](docs/auth-http.md).
+Para validar esta capa sin JDBC ni SMTP real:
+
+```powershell
+.\mvnw.cmd '-Dtest=AutenticacionCuidadorControllerTest,SecurityConfigurationTest,AutenticacionConfigurationTest,EnvioCodigoAccesoSmtpTest,AutenticacionCuidadorServiceTest,AutenticacionCuidadorTransaccionalServiceTest,CriptografiaAutenticacionTest,AutenticacionTransaccionesTest,AuthenticationRepositoryTest,PersistenceModelTest' test
+```
+
+Las pruebas MVC conservan los filtros de seguridad reales y simulan el Service.
+
 Backend con Spring Boot 4.1.1, Java 21, Spring Data JPA y MySQL Connector/J.
 Las dependencias necesarias ya estan incluidas en `pom.xml`.
 
@@ -58,8 +68,10 @@ esos valores en los entornos locales y verificar posteriormente el charset y
 la collation de la base y las tablas. Esta configuracion no modifica MySQL.
 
 En `local`, `spring.jpa.hibernate.ddl-auto=update` permite crear o actualizar
-tablas a partir de las entidades. Actualmente no existen entidades: esta etapa
-solo prepara la conexion y la creacion de la base, no las 17 tablas del SQL.
+tablas a partir de las 17 entidades implementadas. Sobre una base vacia,
+Hibernate genera el esquema sin ejecutar manualmente el SQL de referencia.
+Las tablas fijan utf8mb4/utf8mb4_unicode_ci y usan InnoDB; los defaults de la
+base se deben comprobar por separado.
 Fuera de `local`, `ddl-auto=none` impide la generacion del esquema.
 
 Flyway permanece como dependencia, pero esta desactivado. Tambien esta
@@ -73,42 +85,25 @@ eliminaciones ni transformaciones de datos; tampoco crea triggers o datos
 iniciales por el solo hecho de mapear entidades. La evolucion reproducible se
 abordara posteriormente mediante Flyway y `ddl-auto=validate`.
 
-## Referencia para la futura tarea de entidades
+## Modelo de persistencia
 
-Usar `../documentacion-dia-facil/scrip_diafacil_v7.sql` y la documentacion
-funcional para preservar las 17 tablas, columnas, nulabilidad, tipos, claves,
-indices, restricciones y relaciones. Revisar especialmente la configuracion
-1:1 con clave compartida, la FK compuesta de notificaciones, las unicidades de
-ejecucion y progreso, los OTP sin FK a cuidador y la independencia de plantillas
-y actividades reales. Las cascadas de JPA no equivalen automaticamente a
-`ON DELETE CASCADE` o `ON DELETE SET NULL`.
+Consultar [el modelo JPA](docs/persistence.md) para el inventario de las 17
+tablas, relaciones, restricciones, diferencias de DDL y reglas pendientes.
+No hay relaciones bidireccionales ni cascadas JPA. Se conservan las acciones
+SQL de borrado y los dos CHECK mediante anotaciones Jakarta/Hibernate.
 
-Resolver antes de implementar los comportamientos afectados:
-
-- La documentacion limita a cuatro perfiles; el SQL habla de cuatro activos.
-  El trigger solo comprueba inserciones, no reactivaciones, y puede bloquear
-  inserciones inactivas cuando ya hay cuatro activos.
-- El modelo conceptual incluye el perfil en la ejecucion; el SQL lo obtiene
-  mediante la actividad.
-- La documentacion exige una configuracion por perfil; la FK no obliga a crear
-  esa fila.
-
-El trigger, la validacion del limite con concurrencia, los datos iniciales y la
-coherencia de solicitudes de ayuda requieren mecanismos adicionales. Tambien
-requieren logica de aplicacion los OTP, la vinculacion, la copia de plantillas,
-las transiciones de estado y el borrado logico. Revisar los dos `CHECK`, tipos
-`UNSIGNED`, defaults, `ON UPDATE CURRENT_TIMESTAMP` y acciones referenciales
-mediante mapeos explicitos y comprobacion del DDL; algunos pueden necesitar
-extensiones de Hibernate o migraciones. Nada de esto se implementa en esta etapa.
+El limite acordado es cuatro perfiles activos por cuidador y corresponde a
+un futuro servicio con control de concurrencia. Las entidades no implementan
+autenticacion, OTP, vinculacion, carga inicial ni otras operaciones funcionales.
 
 ## Verificacion
 
 Sin credenciales reales, revisar ubicaciones, placeholders y exclusiones, y
 comprobar que el JAR no contiene `application-local.properties`.
-Para empaquetar sin ejecutar la prueba que necesita MySQL:
+Para probar el mapeo sin MySQL y empaquetar sin ejecutar contextLoads:
 
 ```powershell
-.\mvnw.cmd -DskipTests package
+.\mvnw.cmd -B -ntp -Dtest=PersistenceModelTest package
 ```
 
 Antes de inicializar Git, revisar las reglas del `.gitignore` raiz y de los
@@ -140,8 +135,123 @@ Despues de completar manualmente las credenciales:
 4. Comprobar fallos ante MySQL detenido, credenciales invalidas o permisos
    insuficientes, sin divulgar credenciales en los resultados.
 
-La prueba `contextLoads()` necesita MySQL y credenciales validas; no confirma
-todavia tablas o relaciones. Spring Security esta incluido y un HTTP 401 no
+La prueba `contextLoads()` necesita MySQL y credenciales validas; por si sola
+no comprueba todas las restricciones. Spring Security esta incluido y un HTTP 401 no
 implica por si mismo un fallo de conexion a MySQL.
-Cuando existan entidades, comparar dos bases vacias independientes, comprobar
-conservacion de datos tras reiniciar y probar restricciones y relaciones.
+Las pruebas de metadatos generan `target/jpa-schema.sql` sin ejecutar SQL ni
+abrir conexiones JDBC. La verificacion real en una instancia MySQL desechable
+esta detallada en [la guia de persistencia](docs/persistence.md).
+
+## Correo OTP por SMTP
+
+El adaptador `EnvioCodigoAccesoSmtp` implementa el contrato de envio de OTP.
+Su bean se activa cuando existe `spring.mail.host`, independientemente del
+perfil. Sin esa propiedad no se registra el adaptador. La configuracion
+presente utiliza Gmail exclusivamente para desarrollo local; no define
+infraestructura de produccion.
+
+`spring-boot-starter-mail` ya esta incluido. Spring Boot configura
+`JavaMailSender`; no se necesitan dependencias adicionales. El ensamblado
+de los Services se activa separadamente mediante `diafacil.auth.enabled`,
+como se explica en la seccion de autenticacion. Configurar SMTP por si solo
+no activa ese modulo.
+
+Para preparar Gmail:
+
+1. Usar preferiblemente una cuenta dedicada a pruebas y activar la
+   verificacion en dos pasos.
+2. Crear una [contrasena de aplicacion](https://support.google.com/accounts/answer/185833?hl=en)
+   identificada como DiaFacil local. Algunas cuentas organizacionales o con
+   Proteccion Avanzada no permiten esta opcion; en ese caso detener la
+   configuracion, sin utilizar la contrasena principal de Google.
+3. La plantilla usa las variables `DIAFACIL_GMAIL_USERNAME` (direccion
+   completa) y `DIAFACIL_GMAIL_APP_PASSWORD` (contrasena de aplicacion).
+   La copia privada local puede guardar directamente los valores reales de
+   `spring.mail.username` y `spring.mail.password`, sin depender de variables
+   de entorno. No escribirlos en scripts, comandos versionados ni en el chat.
+4. Si ya existe `application-local.properties`, conservar su configuracion y
+   agregar solo el bloque SMTP de `application-local.example.properties`.
+   No reemplazar una copia privada ya configurada con la plantilla.
+   Si no existe, seguir las instrucciones de configuracion local anteriores.
+5. Activar el perfil local como se indica arriba. El remitente sera la misma
+   cuenta SMTP, con nombre visible DiaFacil. Si se conservan las referencias
+   de la plantilla, se requieren ambas variables; no hay credenciales de respaldo.
+
+La configuracion usa `smtp.gmail.com:587` con STARTTLS obligatorio,
+autenticacion, validacion de identidad del servidor y timeouts de conexion,
+lectura y escritura de 5 segundos. No se modifica la confianza TLS del JDK.
+La codificacion es UTF-8 y las pruebas de conexion al arrancar estan
+desactivadas: el arranque no comprueba las credenciales ni envia correo.
+
+El mensaje es de texto plano, contiene el OTP de seis digitos y aclara que
+vence diez minutos despues de solicitarlo. El codigo no aparece en el asunto.
+El adaptador no reintenta ni oculta errores de autenticacion, conexion o envio.
+Errores de preparacion se propagan como `MailPreparationException`.
+Una aceptacion SMTP no garantiza entrega en la bandeja de entrada.
+
+El Service envia despues del commit. Un error SMTP no deshace la emision
+persistida y no recupera codigos anteriores. No registrar el OTP, las
+credenciales, el cuerpo del correo ni volcar mensajes fallidos contenidos
+en excepciones de Spring Mail. SMTP debug permanece desactivado.
+La contrasena de aplicacion debe revocarse cuando deje de utilizarse y
+actualizarse si Google la revoca al cambiar la contrasena de la cuenta.
+
+Para ejecutar las pruebas de correo, autenticacion y metadatos sin SMTP
+real ni JDBC, desde `backend_dia_facil`:
+
+```powershell
+.\mvnw.cmd '-Dtest=AutenticacionConfigurationTest,EnvioCodigoAccesoSmtpTest,AutenticacionCuidadorServiceTest,AutenticacionCuidadorTransaccionalServiceTest,CriptografiaAutenticacionTest,AutenticacionTransaccionesTest,AuthenticationRepositoryTest,PersistenceModelTest' test
+```
+
+Las pruebas usan `JavaMailSender` simulado y contextos limitados a correo.
+No cargar el contexto completo ni ejecutar `contextLoads` para esta validacion.
+No se realizaron envios reales ni se validaron las credenciales de Gmail.
+
+## Ensamblado de autenticacion
+
+`AutenticacionConfiguration` registra los dos Services, la criptografia,
+`autenticacionClock` y `autenticacionSecureRandom` cuando
+`diafacil.auth.enabled=true`. Por defecto el modulo esta desactivado; la
+plantilla local lo activa. Esta activacion no depende de un nombre de perfil.
+
+La configuracion compartida fija `diafacil.auth.zone=America/Lima`.
+Se puede ajustar explicitamente la zona, que debe coincidir con la sesion
+MySQL que genera los DATETIME. Esa coincidencia sigue pendiente de
+validacion real; esta tarea no modifica la configuracion JDBC ni el esquema.
+
+En la copia privada `application-local.properties` pueden guardarse los
+secretos directamente, sin variables de entorno:
+
+```properties
+diafacil.auth.enabled=true
+diafacil.auth.otp-secret=REEMPLAZAR_POR_BASE64_PRIVADO_OTP
+diafacil.auth.registration-secret=REEMPLAZAR_POR_BASE64_PRIVADO_REGISTRO
+```
+
+Estos son placeholders, no claves utilizables. Generar independientemente
+al menos 32 bytes aleatorios con un generador criptografico para cada clave
+y codificarlos con Base64 estandar. Conservar los dos valores en un lugar
+privado y reutilizarlos entre reinicios; no generar claves al arrancar.
+La plantilla del equipo conserva referencias a `DIAFACIL_AUTH_OTP_SECRET`
+y `DIAFACIL_AUTH_REGISTRATION_SECRET`, sin valores reales.
+
+La copia privada sigue ignorada por Git. No reemplazar sus claves o
+credenciales existentes al actualizar la plantilla ni compartir su contenido.
+No publicar secretos en mensajes, logs, scripts o archivos versionados.
+El arranque rechaza claves ausentes, vacias, con Base64 invalido, con menos
+de 32 bytes decodificados o iguales, sin incluir sus valores en los errores.
+Cambiar la clave OTP invalida hashes anteriores; cambiar la clave de registro
+invalida los comprobantes anteriores.
+
+Al activar autenticacion tambien se requieren ambos repositories, un gestor
+transaccional existente y un `EnvioCodigoAcceso` configurado. Spring Boot/JPA
+proporciona el gestor y el proxy del Service transaccional; la fachada recibe
+ese proxy por inyeccion. Se conservan REQUIRED y el aislamiento predeterminado.
+No hay adaptadores de respaldo ni excepciones funcionales para ocultar una
+configuracion incompleta. Tener el modulo desactivado no desactiva la
+autoconfiguracion JPA o SMTP del resto de la aplicacion.
+
+`AutenticacionConfigurationTest` prueba el ensamblado con contextos Spring
+acotados, claves ficticias, repositories y envio simulados y un gestor sin
+JDBC. Comprueba el proxy, commit/rollback, envio posterior al commit y fallos
+de configuracion. No lee secretos de la copia privada ni envia correos reales.
