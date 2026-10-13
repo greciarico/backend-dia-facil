@@ -6,6 +6,11 @@ import dia_facil.backend.service.auth.AutenticacionCuidadorService;
 import dia_facil.backend.service.auth.AutenticacionCuidadorTransaccionalService;
 import dia_facil.backend.service.auth.CriptografiaAutenticacion;
 import dia_facil.backend.service.auth.EnvioCodigoAcceso;
+import dia_facil.backend.service.auth.SesionCuidadorService;
+import dia_facil.backend.service.auth.CriptografiaSesion;
+import dia_facil.backend.persistence.repository.SesionCuidadorRepository;
+import dia_facil.backend.persistence.repository.CredencialSesionCuidadorRepository;
+import java.time.Duration;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.DateTimeException;
@@ -48,9 +53,25 @@ public class AutenticacionConfiguration {
     @Bean
     public AutenticacionCuidadorTransaccionalService autenticacionCuidadorTransaccionalService(
             CuidadorRepository cuidadores, CodigoAccesoRepository codigos,
-            CriptografiaAutenticacion criptografia, PlatformTransactionManager transactionManager) {
+            CriptografiaAutenticacion criptografia, PlatformTransactionManager transactionManager, SesionCuidadorService sesiones) {
         // Requiring the existing manager prevents an enabled module without transaction infrastructure.
-        return new AutenticacionCuidadorTransaccionalService(cuidadores, codigos, criptografia);
+        return new AutenticacionCuidadorTransaccionalService(cuidadores, codigos, criptografia, sesiones);
+    }
+
+    @Bean
+    public SesionCuidadorService sesionCuidadorService(SesionCuidadorRepository sesiones,
+            CredencialSesionCuidadorRepository credenciales, CuidadorRepository cuidadores,
+            @Qualifier("autenticacionClock") Clock clock, @Qualifier("autenticacionSecureRandom") SecureRandom random, Environment env) {
+        return new SesionCuidadorService(sesiones, credenciales, cuidadores, clock, new CriptografiaSesion(random),
+            duracion(env, "diafacil.auth.session.access", "PT15M"), duracion(env, "diafacil.auth.session.idle", "P30D"),
+            duracion(env, "diafacil.auth.session.absolute", "P90D"));
+    }
+    private static Duration duracion(Environment env, String key, String fallback) {
+        try {
+            var duration = Duration.parse(env.getProperty(key, fallback));
+            if (duration.isZero() || duration.isNegative()) throw new IllegalArgumentException();
+            return duration;
+        } catch (RuntimeException ex) { throw new IllegalArgumentException(key + " requiere duración ISO positiva"); }
     }
 
     @Bean

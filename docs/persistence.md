@@ -2,12 +2,18 @@
 
 ## Alcance
 
-17 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
+19 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
 `dia_facil.backend.persistence.enums`. Hibernate 7.4.5.Final / Jakarta Persistence 3.2.
 El SQL v7 sigue siendo la referencia, ahora ampliada con `cuidador.avatar_id`.
 La ampliación se entrega también en docs/sql/add-cuidador-avatar.sql; no se ha
 ejecutado contra una base real. Los servicios y endpoints de autenticación y
 registro se documentan en auth-http.md. No se habilita Flyway en este incremento.
+
+Sesiones de cuidador: dos tablas adicionales en docs/sql/add-cuidador-sessions.sql.
+SesionCuidador almacena cuidador, creación UTC, inactividad, vencimiento absoluto y
+revocación; CredencialSesionCuidador almacena generación, hashes BINARY(32) únicos,
+access_hasta y consumida_en. FK solo hacia cuidador/sesion_cuidador, nunca dispositivo.
+Fechas nuevas DATETIME(6) representan UTC explícito; no se modifica la zona del OTP.
 
 Todos los nombres fisicos son explicitos. Las relaciones apuntan desde la fila
 dependiente hacia su referencia: no hay colecciones inversas, cascadas JPA ni

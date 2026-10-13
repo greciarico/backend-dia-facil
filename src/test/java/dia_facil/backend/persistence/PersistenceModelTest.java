@@ -77,7 +77,9 @@ class PersistenceModelTest {
         ProgresoPaso.class,
         SolicitudAyuda.class,
         NotificacionCuidador.class,
-        TokenPush.class
+        TokenPush.class,
+        dia_facil.backend.persistence.entity.SesionCuidador.class,
+        dia_facil.backend.persistence.entity.CredencialSesionCuidador.class
     );
     private static StandardServiceRegistry registry;
     private static MetadataImplementor metadata;
@@ -130,7 +132,7 @@ class PersistenceModelTest {
 
     @Test
     void tablesColumnsPrimaryKeysAndTypesMatchReference() {
-        assertEquals(17, tables.size());
+        assertEquals(19, tables.size());
         assertEquals(rows("T").stream().map(row -> row[1]).collect(Collectors.toSet()), tables.keySet());
         for (var row : rows("T")) {
             var table = tables.get(row[1]);
@@ -291,9 +293,9 @@ class PersistenceModelTest {
 
     @Test
     void schemaContainsOnlyDdlAndTableStorageOptions() {
-        assertEquals(17, Pattern.compile("create table ").matcher(ddl).results().count());
-        assertEquals(17, Pattern.compile("engine=innodb").matcher(ddl).results().count());
-        assertEquals(17, Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
+        assertEquals(19, Pattern.compile("create table ").matcher(ddl).results().count());
+        assertEquals(19, Pattern.compile("engine=innodb").matcher(ddl).results().count());
+        assertEquals(19, Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
         assertFalse(ddl.contains("create trigger"));
         assertFalse(ddl.contains("insert into"));
         assertEquals(0, RejectConnections.attempts.get());

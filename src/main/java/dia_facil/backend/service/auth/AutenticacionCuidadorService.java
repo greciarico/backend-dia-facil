@@ -34,12 +34,32 @@ public class AutenticacionCuidadorService {
     public ResultadoVerificacion verificarCodigo(String email, String codigo) {
         return transacciones.verificarCodigo(CriptografiaAutenticacion.normalizarCorreo(email), codigo);
     }
+    public AutenticacionCuidadorTransaccionalService.VerificacionConSesion verificarConSesion(String email, String codigo) {
+        return transacciones.verificarConSesion(CriptografiaAutenticacion.normalizarCorreo(email), codigo);
+    }
+    public SesionCuidadorService.Concesion registrarConSesion(String comprobante, String nombre, String avatarId) {
+        var acreditacion = acreditarRegistro(comprobante, nombre, avatarId);
+        try { return transacciones.registrarConSesion(acreditacion, nombre.strip(), avatarId); }
+        catch (DataIntegrityViolationException ex) {
+            if (!TransactionSynchronizationManager.isActualTransactionActive() && esCorreoDuplicado(ex)) throw new RechazoAutenticacion(Motivo.CUENTA_EXISTENTE);
+            throw ex;
+        }
+    }
 
     public Integer completarRegistro(String comprobante, String nombre) {
         return completarRegistro(comprobante, nombre, null);
     }
 
     public Integer completarRegistro(String comprobante, String nombre, String avatarId) {
+        var acreditacion = acreditarRegistro(comprobante, nombre, avatarId);
+        try {
+            return transacciones.completarRegistro(acreditacion, nombre.strip(), avatarId);
+        } catch (DataIntegrityViolationException ex) {
+            if (!TransactionSynchronizationManager.isActualTransactionActive() && esCorreoDuplicado(ex)) throw new RechazoAutenticacion(Motivo.CUENTA_EXISTENTE);
+            throw ex;
+        }
+    }
+    private CriptografiaAutenticacion.Comprobante acreditarRegistro(String comprobante, String nombre, String avatarId) {
         final CriptografiaAutenticacion.Comprobante acreditacion;
         try {
             acreditacion = criptografia.validarComprobante(comprobante);
@@ -50,15 +70,7 @@ public class AutenticacionCuidadorService {
             throw new IllegalArgumentException("Nombre obligatorio de hasta 100 caracteres");
         }
         CatalogoAvatarCuidador.validar(avatarId);
-        try {
-            return transacciones.completarRegistro(acreditacion, nombre.strip(), avatarId);
-        } catch (DataIntegrityViolationException ex) {
-            // Translate only the known UNIQUE violation, never unrelated integrity errors.
-            if (!TransactionSynchronizationManager.isActualTransactionActive() && esCorreoDuplicado(ex)) {
-                throw new RechazoAutenticacion(Motivo.CUENTA_EXISTENTE);
-            }
-            throw ex;
-        }
+        return acreditacion;
     }
 
     private static boolean esCorreoDuplicado(Throwable error) {

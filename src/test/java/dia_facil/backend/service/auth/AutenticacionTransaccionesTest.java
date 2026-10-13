@@ -16,6 +16,34 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AutenticacionTransaccionesTest {
+    @Test void falloAlEmitirSesionRevierteLaVerificacionDentroDeLaMismaTransaccion() {
+        var f = new Fixture(); var codigo = f.codigo();
+        var caregiver = dia_facil.backend.persistence.entity.Cuidador.crear(EMAIL, "Grecia");
+        org.springframework.test.util.ReflectionTestUtils.setField(caregiver, "idCuidador", 3);
+        when(f.cuidadores.findByEmail(EMAIL)).thenReturn(java.util.Optional.of(caregiver));
+        var sessions = mock(SesionCuidadorService.class);
+        doThrow(new IllegalStateException("Sesiones no disponibles")).when(sessions).emitir(any());
+        org.springframework.test.util.ReflectionTestUtils.setField(f.servicio, "sesiones", sessions);
+        var manager = new Manager();
+        assertThrows(IllegalStateException.class, () -> proxy(f, manager).verificarConSesion(EMAIL, "000123"));
+        assertEquals(List.of("begin", "rollback"), manager.events);
+    }
+
+    @Test void falloAlEmitirSesionRevierteElRegistroDentroDeLaMismaTransaccion() {
+        var f = new Fixture(); var codigo = f.codigo(); codigo.setUsado(true);
+        when(f.codigos.findById(7)).thenReturn(java.util.Optional.of(codigo));
+        when(f.cuidadores.saveAndFlush(any())).thenAnswer(call -> {
+            var c = (dia_facil.backend.persistence.entity.Cuidador) call.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(c, "idCuidador", 3); return c;
+        });
+        var sessions = mock(SesionCuidadorService.class);
+        doThrow(new IllegalStateException("Sesiones no disponibles")).when(sessions).emitir(3);
+        org.springframework.test.util.ReflectionTestUtils.setField(f.servicio, "sesiones", sessions);
+        var manager = new Manager();
+        assertThrows(IllegalStateException.class, () -> proxy(f, manager).registrarConSesion(
+            new CriptografiaAutenticacion.Comprobante(EMAIL, 7, NOW.plusSeconds(600)), "Grecia", null));
+        assertEquals(List.of("begin", "rollback"), manager.events);
+    }
     static class Manager extends AbstractPlatformTransactionManager {
         final List<String> events = new ArrayList<>();
         final ThreadLocal<State> actual = new ThreadLocal<>();

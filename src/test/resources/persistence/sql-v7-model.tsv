@@ -168,3 +168,24 @@ F	token_push	fk_token_cuidador	id_cuidador	cuidador	id_cuidador	CASCADE
 U	token_push	uq_token_push	expo_token
 I	token_push	idx_token_cuidador	id_cuidador
 
+T	sesion_cuidador	SesionCuidador	id_sesion
+C	sesion_cuidador	id_sesion	BIGINT	false	-	true	false
+C	sesion_cuidador	id_cuidador	INT	false	-	false	false
+C	sesion_cuidador	creada_en	DATETIME(6)	false	-	false	false
+C	sesion_cuidador	inactividad_hasta	DATETIME(6)	false	-	false	false
+C	sesion_cuidador	vence_en	DATETIME(6)	false	-	false	false
+C	sesion_cuidador	revocada_en	DATETIME(6)	true	-	false	false
+F	sesion_cuidador	fk_sesion_cuidador	id_cuidador	cuidador	id_cuidador	RESTRICT
+I	sesion_cuidador	idx_sesion_cuidador	id_cuidador
+T	credencial_sesion_cuidador	CredencialSesionCuidador	id_credencial
+C	credencial_sesion_cuidador	id_credencial	BIGINT	false	-	true	false
+C	credencial_sesion_cuidador	id_sesion	BIGINT	false	-	false	false
+C	credencial_sesion_cuidador	generacion	INT	false	-	false	false
+C	credencial_sesion_cuidador	access_hash	BINARY(32)	false	-	false	false
+C	credencial_sesion_cuidador	refresh_hash	BINARY(32)	false	-	false	false
+C	credencial_sesion_cuidador	access_hasta	DATETIME(6)	false	-	false	false
+C	credencial_sesion_cuidador	consumida_en	DATETIME(6)	true	-	false	false
+F	credencial_sesion_cuidador	fk_credencial_sesion	id_sesion	sesion_cuidador	id_sesion	RESTRICT
+U	credencial_sesion_cuidador	uq_credencial_access	access_hash
+U	credencial_sesion_cuidador	uq_credencial_refresh	refresh_hash
+U	credencial_sesion_cuidador	uq_credencial_generacion	id_sesion,generacion

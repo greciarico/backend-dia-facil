@@ -41,12 +41,14 @@ public class AutenticacionCuidadorController {
     @PostMapping(value = "/verificar-codigo", consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> verificar(@Valid @RequestBody VerificarCodigoRequest request, HttpServletRequest http) {
-        var result = service.verificarCodigo(request.email(), request.codigo());
+        var verified = service.verificarConSesion(request.email(), request.codigo());
+        var result = verified.resultado();
         return switch (result.estado()) {
             case AUTENTICADO -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(new VerificarCodigoResponse("AUTENTICADO", result.idCuidador(), null));
+                .body(new VerificarCodigoResponse("AUTENTICADO", result.idCuidador(), null,
+                    verified.concesion().cuidador(), verified.concesion().sesion()));
             case REGISTRO_PENDIENTE -> ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(new VerificarCodigoResponse("REGISTRO_PENDIENTE", null, result.comprobante()));
+                .body(new VerificarCodigoResponse("REGISTRO_PENDIENTE", null, result.comprobante(), null, null));
             case RECHAZADO -> ProblemasHttp.rechazo(result.motivo(), http.getRequestURI());
         };
     }
@@ -54,8 +56,8 @@ public class AutenticacionCuidadorController {
     @PostMapping(value = "/completar-registro", consumes = MediaType.APPLICATION_JSON_VALUE,
         produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CompletarRegistroResponse> completar(@Valid @RequestBody CompletarRegistroRequest request) {
-        var id = service.completarRegistro(request.comprobanteRegistro(), request.nombre(), request.avatarId());
+        var grant = service.registrarConSesion(request.comprobanteRegistro(), request.nombre(), request.avatarId());
         return ResponseEntity.status(201).cacheControl(CacheControl.noStore())
-            .body(new CompletarRegistroResponse("REGISTRO_COMPLETADO", id));
+            .body(new CompletarRegistroResponse("REGISTRO_COMPLETADO", grant.cuidador().idCuidador(), grant.cuidador(), grant.sesion()));
     }
 }

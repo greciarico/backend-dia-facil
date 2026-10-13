@@ -76,4 +76,11 @@ public final class ProblemasHttp {
         response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
         mapper.writeValue(response.getOutputStream(), body);
     }
+    public static void escribir(HttpServletResponse response, ObjectMapper mapper, String path, int status, String codigo, String mensaje) throws IOException {
+        var body = new LinkedHashMap<String, Object>();
+        body.put("type", "about:blank"); body.put("title", status == 401 ? "Unauthorized" : "Service Unavailable");
+        body.put("status", status); body.put("detail", mensaje); body.put("instance", path); body.put("codigo", codigo);
+        response.setStatus(status); response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store"); mapper.writeValue(response.getOutputStream(), body);
+    }
 }

@@ -14,12 +14,33 @@ public class AutenticacionCuidadorTransaccionalService {
     private final CuidadorRepository cuidadores;
     private final CodigoAccesoRepository codigos;
     private final CriptografiaAutenticacion criptografia;
+    private final SesionCuidadorService sesiones;
 
     public AutenticacionCuidadorTransaccionalService(CuidadorRepository cuidadores,
             CodigoAccesoRepository codigos, CriptografiaAutenticacion criptografia) {
+        this(cuidadores, codigos, criptografia, null);
+    }
+    public AutenticacionCuidadorTransaccionalService(CuidadorRepository cuidadores,
+            CodigoAccesoRepository codigos, CriptografiaAutenticacion criptografia, SesionCuidadorService sesiones) {
         this.cuidadores = Objects.requireNonNull(cuidadores);
         this.codigos = Objects.requireNonNull(codigos);
         this.criptografia = Objects.requireNonNull(criptografia);
+        this.sesiones = sesiones;
+    }
+
+    @Transactional
+    public VerificacionConSesion verificarConSesion(String email, String codigo) {
+        var result = verificarCodigo(email, codigo);
+        return new VerificacionConSesion(result, result.estado() == Estado.AUTENTICADO
+            ? Objects.requireNonNull(sesiones).emitir(result.idCuidador()) : null);
+    }
+    @Transactional
+    public SesionCuidadorService.Concesion registrarConSesion(CriptografiaAutenticacion.Comprobante comprobante, String nombre, String avatarId) {
+        var id = completarRegistro(comprobante, nombre, avatarId);
+        return Objects.requireNonNull(sesiones).emitir(id);
+    }
+    public record VerificacionConSesion(ResultadoVerificacion resultado, SesionCuidadorService.Concesion concesion) {
+        @Override public String toString() { return "VerificacionConSesion[contenido reservado]"; }
     }
 
     @Transactional

@@ -45,7 +45,7 @@ Un código de seis dígitos incorrecto sí pasa al Service e incrementa intentos
 Respuesta 200 para cuidador ACTIVO:
 
 ```json
-{"estado":"AUTENTICADO","idCuidador":3}
+{"estado":"AUTENTICADO","idCuidador":3,"cuidador":{"idCuidador":3,"nombre":"Grecia","avatarId":null},"sesion":{"tokenType":"Bearer","accessToken":"<opaco>","accessExpiresAt":"<UTC>","refreshToken":"<opaco>","refreshExpiresAt":"<UTC>","sessionExpiresAt":"<UTC>"}}
 ```
 
 Respuesta 200 para correo sin cuenta:
@@ -55,8 +55,8 @@ Respuesta 200 para correo sin cuenta:
 ```
 
 Los campos que no corresponden se omiten. No se crea un cuidador incompleto.
-`AUTENTICADO` representa la verificación del OTP: todavía no entrega una sesión
-ni habilita otras rutas. El comprobante autoriza solo el registro posterior y
+`AUTENTICADO` verifica OTP y emite credenciales de una nueva sesión independiente.
+`REGISTRO_PENDIENTE` no emite sesión. El comprobante autoriza solo el registro posterior y
 vence a los diez minutos de ser emitido. No registrar cuerpos, códigos o
 comprobantes en logs.
 
@@ -75,13 +75,13 @@ admiten los 20 IDs centralizados en `CatalogoAvatarCuidador` (`person-01` a
 No se admite correo ni ID de cuidador como autoridad: la cuenta usa el correo
 del comprobante firmado. El controller delega al servicio existente.
 
-Respuesta 201, sin sesión, JWT o cookies:
+Respuesta 201, con sesión opaca, sin JWT ni cookies:
 
 ```json
-{"estado":"REGISTRO_COMPLETADO","idCuidador":3}
+{"estado":"REGISTRO_COMPLETADO","idCuidador":3,"cuidador":{"idCuidador":3,"nombre":"Grecia","avatarId":"person-01"},"sesion":{"tokenType":"Bearer","accessToken":"<opaco>","accessExpiresAt":"<UTC>","refreshToken":"<opaco>","refreshExpiresAt":"<UTC>","sessionExpiresAt":"<UTC>"}}
 ```
 
-Se crea una cuenta ACTIVA con nombre y avatar opcional en la misma transacción.
+Se crea una cuenta ACTIVA con nombre, avatar opcional y sesión en la misma transacción.
 No se crea un PerfilUsuario. El comprobante debe estar vigente, firmado para
 registro y respaldado por un OTP consumido del mismo correo. Repetir el registro
 devuelve CUENTA_EXISTENTE, sin editar la cuenta. Una respuesta perdida puede
@@ -90,6 +90,41 @@ haber creado la cuenta; no tratar un 409 como sesión ni éxito ficticio.
 Personalizar más tarde no omite el nombre: envía `avatarId: null`.
 El frontend representa el avatar con la inicial del nombre, sin imagen default.
 La personalización de foto y la navegación posterior están fuera del contrato.
+
+## Sesión persistente
+
+Access y refresh son opacos aleatorios: `a_` o `r_` más 43 caracteres Base64URL
+(32 bytes aleatorios). Solo se guardan hashes SHA-256 BINARY(32) en backend.
+Access dura 15 minutos, acotado por los vencimientos de sesión. Inactividad:
+30 días sin renovar. Máximo absoluto: 90 días desde su creación, nunca reiniciado
+por refresh. Fechas ISO UTC. Políticas: diafacil.auth.session.access/idle/absolute.
+
+`POST /api/auth/cuidadores/renovar-sesion`, body `{"refreshToken":"<opaco>"}`.
+HTTP 200: `{ "cuidador": {"idCuidador":3,"nombre":"Grecia","avatarId":null},
+"sesion": { ...campos anteriores... } }`. Cuenta debe seguir ACTIVA.
+Rotación bajo bloqueo transaccional de la familia: consume el refresh y crea
+otra generación aleatoria. Access anteriores siguen vigentes hasta su expiración
+si la sesión sigue activa. Reutilización de refresh consumido revoca solo su sesión
+y retorna 401 SESION_INVALIDA después de confirmar revocación en BD.
+No hay operacionId, HMAC adicional, confirmación ni recuperación de respuesta.
+Si se pierde el nuevo refresh, puede requerirse autenticar otra vez mediante OTP.
+
+`POST /api/auth/cuidadores/cerrar-sesion`, mismo body. HTTP 204 idempotente.
+Un refresh reconocido, incluso consumido, revoca su familia; desconocido devuelve
+204. No elimina cuenta ni revoca otras sesiones. Sin cuerpo, tokens ni cookies.
+
+`GET /api/auth/cuidadores/sesion`: solo `Authorization: Bearer <access>`.
+Devuelve datos del cuidador obtenidos del principal Spring, sin credenciales.
+Nunca toma identidad de un idCuidador en body, query o URL. No acepta tokens por URL.
+
+Access ausente, inválido o vencido: 401 SESION_REQUIERE_RENOVACION.
+Familia vencida/revocada o cuenta inactiva: 401 SESION_INVALIDA.
+La UI solo renueva el primer caso; no reintenta 403 ni fallos de red automáticamente.
+Todas las respuestas conservan no-store. HTTPS es obligatorio fuera de desarrollo LAN.
+
+La infraestructura sesion_cuidador y credencial_sesion_cuidador es independiente
+de dispositivo y token_push. Conserva historial de hashes hasta que la familia
+finaliza y lo limpia después de siete días mediante tarea diaria.
 
 ## Errores
 
@@ -117,6 +152,8 @@ excepciones, causas, mensajes SQL/SMTP, hashes o secretos.
 | Fallo SMTP o indisponibilidad identificada de persistencia | 503 | SERVICIO_NO_DISPONIBLE |
 | Fallo inesperado o de preparación del correo | 500 | ERROR_INTERNO |
 | Recurso bloqueado por seguridad | 403 | ACCESO_DENEGADO |
+| Access requiere renovación | 401 | SESION_REQUIERE_RENOVACION |
+| Refresh/familia inválida, revocada o vencida | 401 | SESION_INVALIDA |
 
 En validación se añade `errores`, una lista de objetos `campo` y `mensaje`.
 Nunca se incluye el valor introducido. En REENVIO_PREMATURO se devuelve
@@ -125,14 +162,21 @@ exacto. LIMITE_INTENTOS no devuelve ese header: se necesita otro código, el
 actual no vuelve a funcionar por esperar.
 
 Todas las respuestas de autenticación y errores incluyen `Cache-Control` con
-`no-store`. Las tres operaciones no crean sesión ni cookies de autenticación.
+`no-store`. No se crean cookies ni HttpSession: las sesiones del cuidador usan credenciales Bearer opacas y BD.
 
 ## Seguridad y clientes
 
-Solo los tres POST exactos documentados son públicos y están excluidos de CSRF. El resto se
-deniega incluso con credenciales Basic o un usuario autenticado. No hay login
-por formulario, HTTP Basic, logout, JWT ni nuevas credenciales de usuario.
-La protección CSRF sigue habilitada fuera de esos tres POST.
+Solo los cinco POST exactos documentados son públicos y están excluidos de CSRF.
+GET sesion y GET /api/perfiles requieren ROLE_CUIDADOR obtenido por Bearer.
+La consulta de perfiles se documenta en perfiles-http.md. Las demás rutas se deniegan.
+No hay login por formulario, HTTP Basic, JWT ni autenticación por contraseña.
+Cerrar-sesion es explícito; no se habilita el logout por formulario de Spring.
+La protección CSRF sigue habilitada fuera de esos cinco POST.
+
+Validación local mediante AuthenticationFilter, ProviderManager y AuthenticationProvider
+de Spring Security ya instalado; el provider recibe hashes y construye Identidad.
+Un nuevo endpoint privado debe registrarse en el matcher Bearer y en autorización,
+y resolver pertenencia desde ese principal. No se integra servidor OAuth externo.
 
 Los clientes iniciales serán Android/iOS. No se habilita CORS ni comodines.
 Antes de conectar Web se definirán sus orígenes concretos. No crear políticas

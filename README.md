@@ -68,7 +68,7 @@ esos valores en los entornos locales y verificar posteriormente el charset y
 la collation de la base y las tablas. Esta configuracion no modifica MySQL.
 
 En `local`, `spring.jpa.hibernate.ddl-auto=update` permite crear o actualizar
-tablas a partir de las 17 entidades implementadas. Sobre una base vacia,
+tablas a partir de las 19 entidades implementadas. Sobre una base vacia,
 Hibernate genera el esquema sin ejecutar manualmente el SQL de referencia.
 Las tablas fijan utf8mb4/utf8mb4_unicode_ci y usan InnoDB; los defaults de la
 base se deben comprobar por separado.

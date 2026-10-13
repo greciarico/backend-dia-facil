@@ -30,7 +30,7 @@ class SecurityConfigurationTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {"/api/auth/cuidadores/solicitar-codigo", "/api/auth/cuidadores/verificar-codigo",
-        "/api/auth/cuidadores/completar-registro", "/api/perfiles", "/login", "/logout"})
+        "/api/auth/cuidadores/completar-registro", "/api/perfiles/extra", "/login", "/logout"})
     void getNoAbreRutasNiRedirigeAlLogin(String path) throws Exception {
         var result = mvc.perform(get(path)).andExpect(status().isForbidden())
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -61,6 +61,6 @@ class SecurityConfigurationTest {
 
     @Test void credencialesBasicNoHabilitanOtrasRutas() throws Exception {
         mvc.perform(get("/api/perfiles").header("Authorization", "Basic dXNlcjpwYXNz"))
-            .andExpect(status().isForbidden()).andExpect(header().doesNotExist("WWW-Authenticate"));
+            .andExpect(status().isUnauthorized()).andExpect(header().doesNotExist("WWW-Authenticate"));
     }
 }

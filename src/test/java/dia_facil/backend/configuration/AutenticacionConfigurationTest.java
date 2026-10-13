@@ -49,6 +49,10 @@ class AutenticacionConfigurationTest {
             CuidadorRepository cuidadores, CodigoAccesoRepository codigos, EnvioCodigoAcceso envio) {
         return runner.withBean(CuidadorRepository.class, () -> cuidadores)
             .withBean(CodigoAccesoRepository.class, () -> codigos)
+            .withBean(dia_facil.backend.persistence.repository.SesionCuidadorRepository.class,
+                () -> mock(dia_facil.backend.persistence.repository.SesionCuidadorRepository.class))
+            .withBean(dia_facil.backend.persistence.repository.CredencialSesionCuidadorRepository.class,
+                () -> mock(dia_facil.backend.persistence.repository.CredencialSesionCuidadorRepository.class))
             .withBean(PlatformTransactionManager.class, () -> manager)
             .withBean(EnvioCodigoAcceso.class, () -> envio);
     }

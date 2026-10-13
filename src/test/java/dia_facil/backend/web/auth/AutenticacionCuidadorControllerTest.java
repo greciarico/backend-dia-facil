@@ -33,10 +33,20 @@ class AutenticacionCuidadorControllerTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @MockitoBean AutenticacionCuidadorService service;
+    static dia_facil.backend.service.auth.SesionCuidadorService.Concesion concesion() {
+        return new dia_facil.backend.service.auth.SesionCuidadorService.Concesion(
+            new dia_facil.backend.service.auth.SesionCuidadorService.CuidadorResumen(3, "Grecia", null),
+            new dia_facil.backend.service.auth.SesionCuidadorService.Tokens("Bearer", "a_" + "A".repeat(43), java.time.Instant.parse("2026-10-14T00:15:00Z"),
+                "r_" + "B".repeat(43), java.time.Instant.parse("2026-11-13T00:00:00Z"), java.time.Instant.parse("2027-01-12T00:00:00Z")));
+    }
+    static dia_facil.backend.service.auth.AutenticacionCuidadorTransaccionalService.VerificacionConSesion verificacion(ResultadoVerificacion r) {
+        return new dia_facil.backend.service.auth.AutenticacionCuidadorTransaccionalService.VerificacionConSesion(r,
+            r.estado() == Estado.AUTENTICADO ? concesion() : null);
+    }
 
     @Test void registroCreaCuentaSinSesionNiCorreoEnElCuerpo() throws Exception {
         var avatar = dia_facil.backend.service.auth.CatalogoAvatarCuidador.ids().iterator().next();
-        when(service.completarRegistro("comprobante-de-prueba", "Grecia", avatar)).thenReturn(3);
+        when(service.registrarConSesion("comprobante-de-prueba", "Grecia", avatar)).thenReturn(concesion());
         var result = mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
             .content(mapper.writeValueAsString(Map.of("comprobanteRegistro", "comprobante-de-prueba", "nombre", " Grecia ", "avatarId", avatar))))
             .andExpect(status().isCreated()).andExpect(jsonPath("$.estado").value("REGISTRO_COMPLETADO"))
@@ -44,15 +54,15 @@ class AutenticacionCuidadorControllerTest {
             .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
             .andExpect(header().doesNotExist("Set-Cookie")).andReturn();
         assertNull(result.getRequest().getSession(false));
-        verify(service).completarRegistro("comprobante-de-prueba", "Grecia", avatar);
+        verify(service).registrarConSesion("comprobante-de-prueba", "Grecia", avatar);
     }
 
     @Test void registroSinAvatarMantieneNombreObligatorio() throws Exception {
-        when(service.completarRegistro("comprobante-de-prueba", "Grecia", null)).thenReturn(3);
+        when(service.registrarConSesion("comprobante-de-prueba", "Grecia", null)).thenReturn(concesion());
         mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
             .content("{\"comprobanteRegistro\":\"comprobante-de-prueba\",\"nombre\":\"Grecia\",\"avatarId\":null}"))
             .andExpect(status().isCreated());
-        verify(service).completarRegistro("comprobante-de-prueba", "Grecia", null);
+        verify(service).registrarConSesion("comprobante-de-prueba", "Grecia", null);
     }
 
     @Test void registroValidaNombreYComprobanteSinRevelarValores() throws Exception {
@@ -69,13 +79,13 @@ class AutenticacionCuidadorControllerTest {
 
     @Test void registroTraduceComprobanteInvalidoCuentaExistenteYAvatarInvalido() throws Exception {
         for (var motivo : new Motivo[] {Motivo.COMPROBANTE_INVALIDO, Motivo.CUENTA_EXISTENTE}) {
-            doThrow(new RechazoAutenticacion(motivo)).when(service).completarRegistro("comprobante-de-prueba", "Grecia", null);
+            doThrow(new RechazoAutenticacion(motivo)).when(service).registrarConSesion("comprobante-de-prueba", "Grecia", null);
             mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"comprobanteRegistro\":\"comprobante-de-prueba\",\"nombre\":\"Grecia\"}"))
                 .andExpect(status().is(motivo == Motivo.CUENTA_EXISTENTE ? 409 : 422))
                 .andExpect(jsonPath("$.codigo").value(motivo.name()));
         }
-        when(service.completarRegistro("comprobante-de-prueba", "Grecia", "invalid")).thenThrow(new IllegalArgumentException());
+        when(service.registrarConSesion("comprobante-de-prueba", "Grecia", "invalid")).thenThrow(new IllegalArgumentException());
         mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
             .content("{\"comprobanteRegistro\":\"comprobante-de-prueba\",\"nombre\":\"Grecia\",\"avatarId\":\"invalid\"}"))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
@@ -94,26 +104,29 @@ class AutenticacionCuidadorControllerTest {
         verify(service).solicitarCodigo(EMAIL);
     }
 
-    @Test void verificaActivoConCerosInicialesSinEntregarSesion() throws Exception {
-        when(service.verificarCodigo(EMAIL, "000123")).thenReturn(new ResultadoVerificacion(Estado.AUTENTICADO, 3, null, null));
+    @Test void verificaActivoConCerosInicialesEntregaBearerSinCookie() throws Exception {
+        when(service.verificarConSesion(EMAIL, "000123")).thenReturn(verificacion(new ResultadoVerificacion(Estado.AUTENTICADO, 3, null, null)));
         var result = mvc.perform(post(BASE + "verificar-codigo").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"grecia@example.com\",\"codigo\":\"000123\"}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("AUTENTICADO"))
             .andExpect(jsonPath("$.idCuidador").value(3)).andExpect(jsonPath("$.comprobanteRegistro").doesNotExist())
+            .andExpect(jsonPath("$.sesion.tokenType").value("Bearer"))
+            .andExpect(jsonPath("$.cuidador.nombre").value("Grecia"))
             .andExpect(jsonPath("$.motivo").doesNotExist()).andExpect(jsonPath("$.token").doesNotExist())
             .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
             .andExpect(header().doesNotExist("Set-Cookie")).andReturn();
         assertNull(result.getRequest().getSession(false));
-        verify(service).verificarCodigo(EMAIL, "000123");
+        verify(service).verificarConSesion(EMAIL, "000123");
     }
 
     @Test void correoNuevoRecibeSoloComprobanteYEstado() throws Exception {
-        when(service.verificarCodigo(EMAIL, "000123")).thenReturn(
-            new ResultadoVerificacion(Estado.REGISTRO_PENDIENTE, null, "comprobante-de-prueba", null));
+        when(service.verificarConSesion(EMAIL, "000123")).thenReturn(
+            verificacion(new ResultadoVerificacion(Estado.REGISTRO_PENDIENTE, null, "comprobante-de-prueba", null)));
         mvc.perform(post(BASE + "verificar-codigo").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"grecia@example.com\",\"codigo\":\"000123\"}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("REGISTRO_PENDIENTE"))
             .andExpect(jsonPath("$.comprobanteRegistro").value("comprobante-de-prueba"))
+            .andExpect(jsonPath("$.sesion").doesNotExist())
             .andExpect(jsonPath("$.idCuidador").doesNotExist()).andExpect(jsonPath("$.comprobante").doesNotExist());
     }
 
@@ -124,7 +137,7 @@ class AutenticacionCuidadorControllerTest {
 
     @ParameterizedTest @MethodSource("rechazos")
     void convierteCadaRechazoFuncionalAProblemDetail(Motivo motivo) throws Exception {
-        when(service.verificarCodigo(EMAIL, "000123")).thenReturn(ResultadoVerificacion.rechazado(motivo));
+        when(service.verificarConSesion(EMAIL, "000123")).thenReturn(verificacion(ResultadoVerificacion.rechazado(motivo)));
         int expected = motivo == Motivo.LIMITE_INTENTOS ? 429 : motivo == Motivo.CUENTA_INACTIVA ? 403 : 422;
         mvc.perform(post(BASE + "verificar-codigo").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"grecia@example.com\",\"codigo\":\"000123\"}"))

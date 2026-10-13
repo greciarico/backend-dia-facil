@@ -21,6 +21,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(dia_facil.backend.service.auth.SesionInvalidada.class)
+    public ResponseEntity<ProblemDetail> sesionInvalida(dia_facil.backend.service.auth.SesionInvalidada error, HttpServletRequest request) {
+        return ProblemasHttp.respuesta(ProblemasHttp.crear(401, error.renovable() ? "SESION_REQUIERE_RENOVACION" : "SESION_INVALIDA",
+            "Tu sesión terminó. Verifica tu correo para volver a entrar.", request.getRequestURI()));
+    }
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
             HttpHeaders headers, HttpStatusCode status, WebRequest request) {
@@ -70,6 +75,7 @@ public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandle
             ? "El nombre debe tener como máximo 100 caracteres." : "El nombre es obligatorio.";
         if ("avatarId".equals(campo)) return "El avatar no es válido.";
         if ("comprobanteRegistro".equals(campo)) return "La verificación de registro no es válida.";
+        if ("refreshToken".equals(campo)) return "La credencial de sesión no es válida.";
         if ("NotBlank".equals(restriccion)) return "email".equals(campo)
             ? "El correo es obligatorio." : "El código es obligatorio.";
         if ("Size".equals(restriccion)) return "El correo debe tener como máximo 150 caracteres.";
