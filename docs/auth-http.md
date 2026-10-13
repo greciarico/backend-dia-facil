@@ -17,12 +17,17 @@ exteriores; la normalización de minúsculas sigue correspondiendo al Service.
 Respuesta 200, `application/json`:
 
 ```json
-{"estado":"CODIGO_SOLICITADO","mensaje":"Revisa tu correo para encontrar el código.","reenvioEnSegundos":60}
+{"estado":"CODIGO_SOLICITADO","mensaje":"Revisa tu correo para encontrar el código.","reenvioEnSegundos":45}
 ```
 
 La llamada termina después de persistir y ejecutar el envío SMTP. La respuesta
 no revela si existe una cuenta ni garantiza entrega en la bandeja de entrada.
 El OTP tiene vigencia de diez minutos desde su emisión.
+
+El cooldown oficial de reenvío es de 45 segundos desde la emisión anterior.
+`PoliticaCodigoAcceso.REENVIO_EN_SEGUNDOS` centraliza la regla y su representación
+HTTP. El frontend usa `reenvioEnSegundos` para una espera local conservadora desde
+la recepción, no como tiempo restante exacto del servidor.
 
 ## Verificar código
 
@@ -82,7 +87,7 @@ excepciones, causas, mensajes SQL/SMTP, hashes o secretos.
 
 En validación se añade `errores`, una lista de objetos `campo` y `mensaje`.
 Nunca se incluye el valor introducido. En REENVIO_PREMATURO se devuelve
-`Retry-After: 60`: espera conservadora desde el rechazo, no tiempo restante
+`Retry-After: 45`: espera conservadora desde el rechazo, no tiempo restante
 exacto. LIMITE_INTENTOS no devuelve ese header: se necesita otro código, el
 actual no vuelve a funcionar por esperar.
 

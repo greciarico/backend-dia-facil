@@ -1,6 +1,7 @@
 package dia_facil.backend.web.auth;
 
 import dia_facil.backend.service.auth.AutenticacionCuidadorService;
+import dia_facil.backend.service.auth.PoliticaCodigoAcceso;
 import dia_facil.backend.web.auth.dto.SolicitarCodigoRequest;
 import dia_facil.backend.web.auth.dto.SolicitarCodigoResponse;
 import dia_facil.backend.web.auth.dto.VerificarCodigoRequest;
@@ -32,7 +33,7 @@ public class AutenticacionCuidadorController {
     public ResponseEntity<SolicitarCodigoResponse> solicitar(@Valid @RequestBody SolicitarCodigoRequest request) {
         service.solicitarCodigo(request.email());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new SolicitarCodigoResponse(
-            "CODIGO_SOLICITADO", "Revisa tu correo para encontrar el código.", 60));
+            "CODIGO_SOLICITADO", "Revisa tu correo para encontrar el código.", PoliticaCodigoAcceso.REENVIO_EN_SEGUNDOS));
     }
 
     @PostMapping(value = "/verificar-codigo", consumes = MediaType.APPLICATION_JSON_VALUE,

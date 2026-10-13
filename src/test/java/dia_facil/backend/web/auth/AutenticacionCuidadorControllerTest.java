@@ -39,7 +39,7 @@ class AutenticacionCuidadorControllerTest {
                 .content("{\"email\":\" grecia@example.com \"}"))
             .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.estado").value("CODIGO_SOLICITADO"))
-            .andExpect(jsonPath("$.reenvioEnSegundos").value(60))
+            .andExpect(jsonPath("$.reenvioEnSegundos").value(45))
             .andExpect(jsonPath("$.codigo").doesNotExist())
             .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
             .andExpect(header().doesNotExist("Set-Cookie")).andReturn();
@@ -94,7 +94,7 @@ class AutenticacionCuidadorControllerTest {
         mvc.perform(post(BASE + "solicitar-codigo").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"grecia@example.com\"}"))
             .andExpect(status().isTooManyRequests()).andExpect(jsonPath("$.codigo").value("REENVIO_PREMATURO"))
-            .andExpect(header().string("Retry-After", "60"));
+            .andExpect(header().string("Retry-After", "45"));
     }
 
     @ParameterizedTest @ValueSource(strings = {"solicitar-codigo", "verificar-codigo"})

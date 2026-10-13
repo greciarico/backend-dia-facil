@@ -42,7 +42,7 @@ class AutenticacionCuidadorTransaccionalServiceTest {
         CodigoAcceso codigo() {
             var codigo = CodigoAcceso.emitir(EMAIL, crypto.hashCodigo(EMAIL, "000123"), crypto.ahora().plusMinutes(10));
             ReflectionTestUtils.setField(codigo, "idCodigoAcceso", 7);
-            ReflectionTestUtils.setField(codigo, "fechaCreacion", crypto.ahora().minusSeconds(60));
+            ReflectionTestUtils.setField(codigo, "fechaCreacion", crypto.ahora().minusSeconds(45));
             when(codigos.findFirstByEmailOrderByFechaCreacionDescIdCodigoAccesoDesc(EMAIL))
                 .thenReturn(Optional.of(codigo));
             return codigo;
@@ -66,14 +66,14 @@ class AutenticacionCuidadorTransaccionalServiceTest {
         verifyNoInteractions(f.cuidadores);
     }
 
-    @Test void reenvioRechazadoAntesDe60SegundosYPermitidoEnElLimite() {
+    @Test void reenvioRechazadoAntesDe45SegundosYPermitidoEnElLimite() {
         var f = new Fixture();
         var anterior = f.codigo();
-        ReflectionTestUtils.setField(anterior, "fechaCreacion", f.crypto.ahora().minusSeconds(59));
+        ReflectionTestUtils.setField(anterior, "fechaCreacion", f.crypto.ahora().minusSeconds(44));
         assertEquals(Motivo.REENVIO_PREMATURO,
             assertThrows(RechazoAutenticacion.class, () -> f.servicio.emitirCodigo(EMAIL)).getMotivo());
         verify(f.codigos, never()).save(any());
-        ReflectionTestUtils.setField(anterior, "fechaCreacion", f.crypto.ahora().minusSeconds(60));
+        ReflectionTestUtils.setField(anterior, "fechaCreacion", f.crypto.ahora().minusSeconds(45));
         f.servicio.emitirCodigo(EMAIL);
         verify(f.codigos).save(argThat(nuevo -> nuevo != anterior && nuevo.getIntentos() == 0));
         assertFalse(anterior.getUsado());

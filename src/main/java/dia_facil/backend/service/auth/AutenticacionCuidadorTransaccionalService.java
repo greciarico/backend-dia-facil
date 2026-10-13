@@ -26,7 +26,7 @@ public class AutenticacionCuidadorTransaccionalService {
     public Emision emitirCodigo(String email) {
         var ultimo = codigos.findFirstByEmailOrderByFechaCreacionDescIdCodigoAccesoDesc(email);
         var ahora = criptografia.ahora();
-        if (ultimo.isPresent() && ahora.isBefore(ultimo.get().getFechaCreacion().plusSeconds(60))) {
+        if (ultimo.isPresent() && ahora.isBefore(ultimo.get().getFechaCreacion().plusSeconds(PoliticaCodigoAcceso.REENVIO_EN_SEGUNDOS))) {
             throw new RechazoAutenticacion(Motivo.REENVIO_PREMATURO);
         }
         var codigo = criptografia.generarCodigo();

@@ -50,7 +50,8 @@ public final class ProblemasHttp {
         var problem = crear(status, status == 500 ? "ERROR_INTERNO" : motivo.name(), detail, path);
         if (motivo == Motivo.REENVIO_PREMATURO) {
             return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .cacheControl(CacheControl.noStore()).header(HttpHeaders.RETRY_AFTER, "60").body(problem);
+                .cacheControl(CacheControl.noStore()).header(HttpHeaders.RETRY_AFTER,
+                    Integer.toString(dia_facil.backend.service.auth.PoliticaCodigoAcceso.REENVIO_EN_SEGUNDOS)).body(problem);
         }
         return respuesta(problem);
     }
