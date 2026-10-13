@@ -66,6 +66,10 @@ public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandle
     }
 
     private static String mensaje(String campo, String restriccion) {
+        if ("nombre".equals(campo)) return "Size".equals(restriccion)
+            ? "El nombre debe tener como máximo 100 caracteres." : "El nombre es obligatorio.";
+        if ("avatarId".equals(campo)) return "El avatar no es válido.";
+        if ("comprobanteRegistro".equals(campo)) return "La verificación de registro no es válida.";
         if ("NotBlank".equals(restriccion)) return "email".equals(campo)
             ? "El correo es obligatorio." : "El código es obligatorio.";
         if ("Size".equals(restriccion)) return "El correo debe tener como máximo 150 caracteres.";

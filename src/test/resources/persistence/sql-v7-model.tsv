@@ -2,6 +2,7 @@
 T	cuidador	Cuidador	id_cuidador
 C	cuidador	id_cuidador	INT	false	-	true	false
 C	cuidador	nombre	VARCHAR(100)	true	-	false	false
+C	cuidador	avatar_id	VARCHAR(32)	true	-	false	false
 C	cuidador	email	VARCHAR(150)	false	-	false	false
 C	cuidador	estado	ENUM( 'ACTIVO', 'INACTIVO' )	false	'ACTIVO'	false	false
 C	cuidador	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false

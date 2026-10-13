@@ -23,7 +23,7 @@ class SecurityConfigurationTest {
 
     @Test void moduloDesactivadoNoRegistraControllerNiExponeServicio() throws Exception {
         assertTrue(context.getBeansOfType(AutenticacionCuidadorController.class).isEmpty());
-        for (var ruta : new String[] {"solicitar-codigo", "verificar-codigo"}) {
+        for (var ruta : new String[] {"solicitar-codigo", "verificar-codigo", "completar-registro"}) {
             mvc.perform(post("/api/auth/cuidadores/" + ruta).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNotFound());
         }
@@ -47,9 +47,9 @@ class SecurityConfigurationTest {
             .andExpect(jsonPath("$.codigo").value("ACCESO_DENEGADO"));
     }
 
-    @Test void csrfSoloSeExcluyeEnLosDosPostExactosYCorsNoEsPermisivo() throws Exception {
+    @Test void csrfSoloSeExcluyeEnLosTresPostExactosYCorsNoEsPermisivo() throws Exception {
         for (var request : new org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder[] {
-                post("/api/auth/cuidadores/completar-registro"), put("/api/auth/cuidadores/verificar-codigo"),
+                post("/api/auth/cuidadores/completar-registro/extra"), put("/api/auth/cuidadores/completar-registro"), put("/api/auth/cuidadores/verificar-codigo"),
                 post("/api/auth/cuidadores/verificar-codigo/extra")}) {
             mvc.perform(request.contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("ACCESO_DENEGADO"));

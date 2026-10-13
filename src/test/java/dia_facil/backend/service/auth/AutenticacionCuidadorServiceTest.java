@@ -39,7 +39,19 @@ class AutenticacionCuidadorServiceTest {
             assertThrows(IllegalArgumentException.class, () -> service.completarRegistro(token, nombre));
         }
         assertThrows(IllegalArgumentException.class, () -> service.completarRegistro(token, null));
-        assertThrows(IllegalArgumentException.class, () -> service.completarRegistro("alterado", "Grecia"));
+        assertEquals(Motivo.COMPROBANTE_INVALIDO, assertThrows(RechazoAutenticacion.class,
+            () -> service.completarRegistro("alterado", "Grecia")).getMotivo());
+        verifyNoInteractions(f.codigos, f.cuidadores);
+    }
+
+    @Test void comprobanteVencidoYAvatarDesconocidoNoPersisten() {
+        var f = new Fixture();
+        var service = new AutenticacionCuidadorService(f.servicio, f.crypto, mock(EnvioCodigoAcceso.class));
+        var vencido = crypto(NOW.minusSeconds(600)).emitirComprobante(EMAIL, 7);
+        assertEquals(Motivo.COMPROBANTE_INVALIDO, assertThrows(RechazoAutenticacion.class,
+            () -> service.completarRegistro(vencido, "Grecia", null)).getMotivo());
+        var valido = f.crypto.emitirComprobante(EMAIL, 7);
+        assertThrows(IllegalArgumentException.class, () -> service.completarRegistro(valido, "Grecia", "person-99"));
         verifyNoInteractions(f.codigos, f.cuidadores);
     }
 

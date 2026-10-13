@@ -36,12 +36,22 @@ public class AutenticacionCuidadorService {
     }
 
     public Integer completarRegistro(String comprobante, String nombre) {
-        var acreditacion = criptografia.validarComprobante(comprobante);
+        return completarRegistro(comprobante, nombre, null);
+    }
+
+    public Integer completarRegistro(String comprobante, String nombre, String avatarId) {
+        final CriptografiaAutenticacion.Comprobante acreditacion;
+        try {
+            acreditacion = criptografia.validarComprobante(comprobante);
+        } catch (IllegalArgumentException ex) {
+            throw new RechazoAutenticacion(Motivo.COMPROBANTE_INVALIDO);
+        }
         if (nombre == null || nombre.isBlank() || nombre.strip().length() > 100) {
             throw new IllegalArgumentException("Nombre obligatorio de hasta 100 caracteres");
         }
+        CatalogoAvatarCuidador.validar(avatarId);
         try {
-            return transacciones.completarRegistro(acreditacion, nombre.strip());
+            return transacciones.completarRegistro(acreditacion, nombre.strip(), avatarId);
         } catch (DataIntegrityViolationException ex) {
             // Translate only the known UNIQUE violation, never unrelated integrity errors.
             if (!TransactionSynchronizationManager.isActualTransactionActive() && esCorreoDuplicado(ex)) {

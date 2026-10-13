@@ -3,6 +3,8 @@ package dia_facil.backend.web.auth;
 import dia_facil.backend.service.auth.AutenticacionCuidadorService;
 import dia_facil.backend.service.auth.PoliticaCodigoAcceso;
 import dia_facil.backend.web.auth.dto.SolicitarCodigoRequest;
+import dia_facil.backend.web.auth.dto.CompletarRegistroRequest;
+import dia_facil.backend.web.auth.dto.CompletarRegistroResponse;
 import dia_facil.backend.web.auth.dto.SolicitarCodigoResponse;
 import dia_facil.backend.web.auth.dto.VerificarCodigoRequest;
 import dia_facil.backend.web.auth.dto.VerificarCodigoResponse;
@@ -47,5 +49,13 @@ public class AutenticacionCuidadorController {
                 .body(new VerificarCodigoResponse("REGISTRO_PENDIENTE", null, result.comprobante()));
             case RECHAZADO -> ProblemasHttp.rechazo(result.motivo(), http.getRequestURI());
         };
+    }
+
+    @PostMapping(value = "/completar-registro", consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CompletarRegistroResponse> completar(@Valid @RequestBody CompletarRegistroRequest request) {
+        var id = service.completarRegistro(request.comprobanteRegistro(), request.nombre(), request.avatarId());
+        return ResponseEntity.status(201).cacheControl(CacheControl.noStore())
+            .body(new CompletarRegistroResponse("REGISTRO_COMPLETADO", id));
     }
 }

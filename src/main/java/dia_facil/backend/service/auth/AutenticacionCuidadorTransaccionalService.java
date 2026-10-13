@@ -67,6 +67,12 @@ public class AutenticacionCuidadorTransaccionalService {
 
     @Transactional
     public Integer completarRegistro(CriptografiaAutenticacion.Comprobante comprobante, String nombre) {
+        return completarRegistro(comprobante, nombre, null);
+    }
+
+    @Transactional
+    public Integer completarRegistro(CriptografiaAutenticacion.Comprobante comprobante, String nombre, String avatarId) {
+        CatalogoAvatarCuidador.validar(avatarId);
         if (!criptografia.vigente(comprobante)) throw new RechazoAutenticacion(Motivo.COMPROBANTE_INVALIDO);
         var registro = codigos.findById(comprobante.idCodigo());
         if (registro.isEmpty() || !registro.get().getUsado()
@@ -76,7 +82,9 @@ public class AutenticacionCuidadorTransaccionalService {
         if (cuidadores.findByEmail(comprobante.email()).isPresent()) {
             throw new RechazoAutenticacion(Motivo.CUENTA_EXISTENTE);
         }
-        return cuidadores.saveAndFlush(Cuidador.crear(comprobante.email(), nombre)).getIdCuidador();
+        var cuidador = Cuidador.crear(comprobante.email(), nombre);
+        cuidador.setAvatarId(avatarId);
+        return cuidadores.saveAndFlush(cuidador).getIdCuidador();
     }
 
     // This value is internal and must never be logged or exposed as an HTTP response.

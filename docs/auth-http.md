@@ -57,8 +57,39 @@ Respuesta 200 para correo sin cuenta:
 Los campos que no corresponden se omiten. No se crea un cuidador incompleto.
 `AUTENTICADO` representa la verificación del OTP: todavía no entrega una sesión
 ni habilita otras rutas. El comprobante autoriza solo el registro posterior y
-vence a los diez minutos de ser emitido. Completar registro no tiene endpoint
-en esta etapa. No registrar cuerpos, códigos o comprobantes en logs.
+vence a los diez minutos de ser emitido. No registrar cuerpos, códigos o
+comprobantes en logs.
+
+## Completar registro
+
+`POST /api/auth/cuidadores/completar-registro`, `Content-Type: application/json`.
+
+```json
+{"comprobanteRegistro":"<comprobante temporal firmado>","nombre":"Grecia","avatarId":"person-01"}
+```
+
+Comprobante obligatorio de hasta 2048 caracteres. Nombre obligatorio, recortado
+en extremos y de hasta 100 caracteres. `avatarId` es opcional/nullable: solo se
+admiten los 20 IDs centralizados en `CatalogoAvatarCuidador` (`person-01` a
+`person-10`, `animal-01` a `animal-10`). Los assets existen solo en frontend.
+No se admite correo ni ID de cuidador como autoridad: la cuenta usa el correo
+del comprobante firmado. El controller delega al servicio existente.
+
+Respuesta 201, sin sesión, JWT o cookies:
+
+```json
+{"estado":"REGISTRO_COMPLETADO","idCuidador":3}
+```
+
+Se crea una cuenta ACTIVA con nombre y avatar opcional en la misma transacción.
+No se crea un PerfilUsuario. El comprobante debe estar vigente, firmado para
+registro y respaldado por un OTP consumido del mismo correo. Repetir el registro
+devuelve CUENTA_EXISTENTE, sin editar la cuenta. Una respuesta perdida puede
+haber creado la cuenta; no tratar un 409 como sesión ni éxito ficticio.
+
+Personalizar más tarde no omite el nombre: envía `avatarId: null`.
+El frontend representa el avatar con la inicial del nombre, sin imagen default.
+La personalización de foto y la navegación posterior están fuera del contrato.
 
 ## Errores
 
@@ -80,6 +111,8 @@ excepciones, causas, mensajes SQL/SMTP, hashes o secretos.
 | Código usado | 422 | CODIGO_USADO |
 | Límite de cinco errores | 429 | LIMITE_INTENTOS |
 | Cuenta inactiva | 403 | CUENTA_INACTIVA |
+| Comprobante manipulado, vencido o sin respaldo válido | 422 | COMPROBANTE_INVALIDO |
+| Registro repetido o correo ya registrado | 409 | CUENTA_EXISTENTE |
 | Reenvío prematuro | 429 | REENVIO_PREMATURO |
 | Fallo SMTP o indisponibilidad identificada de persistencia | 503 | SERVICIO_NO_DISPONIBLE |
 | Fallo inesperado o de preparación del correo | 500 | ERROR_INTERNO |
@@ -92,14 +125,14 @@ exacto. LIMITE_INTENTOS no devuelve ese header: se necesita otro código, el
 actual no vuelve a funcionar por esperar.
 
 Todas las respuestas de autenticación y errores incluyen `Cache-Control` con
-`no-store`. Las dos operaciones de autenticación no crean sesión ni cookies de autenticación.
+`no-store`. Las tres operaciones no crean sesión ni cookies de autenticación.
 
 ## Seguridad y clientes
 
-Solo los dos POST exactos son públicos y están excluidos de CSRF. El resto se
+Solo los tres POST exactos documentados son públicos y están excluidos de CSRF. El resto se
 deniega incluso con credenciales Basic o un usuario autenticado. No hay login
 por formulario, HTTP Basic, logout, JWT ni nuevas credenciales de usuario.
-La protección CSRF sigue habilitada fuera de esos dos POST.
+La protección CSRF sigue habilitada fuera de esos tres POST.
 
 Los clientes iniciales serán Android/iOS. No se habilita CORS ni comodines.
 Antes de conectar Web se definirán sus orígenes concretos. No crear políticas

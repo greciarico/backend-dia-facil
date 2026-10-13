@@ -32,7 +32,8 @@ public final class ProblemasHttp {
 
     public static ResponseEntity<ProblemDetail> rechazo(Motivo motivo, String path) {
         int status = switch (motivo) {
-            case CODIGO_INEXISTENTE, CODIGO_INCORRECTO, CODIGO_VENCIDO, CODIGO_USADO -> 422;
+            case CODIGO_INEXISTENTE, CODIGO_INCORRECTO, CODIGO_VENCIDO, CODIGO_USADO, COMPROBANTE_INVALIDO -> 422;
+            case CUENTA_EXISTENTE -> 409;
             case LIMITE_INTENTOS, REENVIO_PREMATURO -> 429;
             case CUENTA_INACTIVA -> 403;
             default -> 500;
@@ -45,6 +46,8 @@ public final class ProblemasHttp {
             case LIMITE_INTENTOS -> "Se alcanzó el límite de intentos. Solicita otro código.";
             case REENVIO_PREMATURO -> "Espera antes de solicitar otro código.";
             case CUENTA_INACTIVA -> "La cuenta está inactiva.";
+            case COMPROBANTE_INVALIDO -> "La verificación de registro ya no es válida. Solicita y verifica otro código.";
+            case CUENTA_EXISTENTE -> "La cuenta ya existe. Solicita y verifica otro código para acceder.";
             default -> "No se pudo completar la operación.";
         };
         var problem = crear(status, status == 500 ? "ERROR_INTERNO" : motivo.name(), detail, path);

@@ -49,6 +49,9 @@ public class Cuidador {
     @Column(name = "nombre", nullable = true, length = 100)
     private String nombre;
 
+    @Column(name = "avatar_id", nullable = true, length = 32)
+    private String avatarId;
+
     @Column(name = "email", nullable = false, length = 150)
     private String email;
 

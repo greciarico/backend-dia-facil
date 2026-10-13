@@ -17,9 +17,10 @@ public class SecurityConfiguration {
         var paths = PathPatternRequestMatcher.withDefaults();
         var solicitar = paths.matcher(HttpMethod.POST, "/api/auth/cuidadores/solicitar-codigo");
         var verificar = paths.matcher(HttpMethod.POST, "/api/auth/cuidadores/verificar-codigo");
-        return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar).permitAll()
+        var completar = paths.matcher(HttpMethod.POST, "/api/auth/cuidadores/completar-registro");
+        return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar).permitAll()
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar))
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
             .logout(logout -> logout.disable())

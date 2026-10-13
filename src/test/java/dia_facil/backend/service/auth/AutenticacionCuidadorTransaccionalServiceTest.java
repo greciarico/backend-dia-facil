@@ -171,6 +171,7 @@ class AutenticacionCuidadorTransaccionalServiceTest {
             Cuidador cuidador = call.getArgument(0);
             assertEquals(EMAIL, cuidador.getEmail());
             assertEquals("Grecia", cuidador.getNombre());
+            assertNull(cuidador.getAvatarId());
             assertEquals(EstadoCuidador.ACTIVO, cuidador.getEstado());
             assertNull(cuidador.getFechaCreacion());
             ReflectionTestUtils.setField(cuidador, "idCuidador", 3);

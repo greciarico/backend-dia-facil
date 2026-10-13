@@ -34,6 +34,53 @@ class AutenticacionCuidadorControllerTest {
     @Autowired ObjectMapper mapper;
     @MockitoBean AutenticacionCuidadorService service;
 
+    @Test void registroCreaCuentaSinSesionNiCorreoEnElCuerpo() throws Exception {
+        var avatar = dia_facil.backend.service.auth.CatalogoAvatarCuidador.ids().iterator().next();
+        when(service.completarRegistro("comprobante-de-prueba", "Grecia", avatar)).thenReturn(3);
+        var result = mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(Map.of("comprobanteRegistro", "comprobante-de-prueba", "nombre", " Grecia ", "avatarId", avatar))))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.estado").value("REGISTRO_COMPLETADO"))
+            .andExpect(jsonPath("$.idCuidador").value(3)).andExpect(jsonPath("$.comprobanteRegistro").doesNotExist())
+            .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+            .andExpect(header().doesNotExist("Set-Cookie")).andReturn();
+        assertNull(result.getRequest().getSession(false));
+        verify(service).completarRegistro("comprobante-de-prueba", "Grecia", avatar);
+    }
+
+    @Test void registroSinAvatarMantieneNombreObligatorio() throws Exception {
+        when(service.completarRegistro("comprobante-de-prueba", "Grecia", null)).thenReturn(3);
+        mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"comprobanteRegistro\":\"comprobante-de-prueba\",\"nombre\":\"Grecia\",\"avatarId\":null}"))
+            .andExpect(status().isCreated());
+        verify(service).completarRegistro("comprobante-de-prueba", "Grecia", null);
+    }
+
+    @Test void registroValidaNombreYComprobanteSinRevelarValores() throws Exception {
+        for (var nombre : new String[] {"", " ", "a".repeat(101)}) {
+            mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("nombre", nombre, "comprobanteRegistro", "comprobante-de-prueba"))))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"))
+                .andExpect(jsonPath("$.errores[0].campo").value("nombre"));
+        }
+        mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Grecia\"}"))
+            .andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
+
+    @Test void registroTraduceComprobanteInvalidoCuentaExistenteYAvatarInvalido() throws Exception {
+        for (var motivo : new Motivo[] {Motivo.COMPROBANTE_INVALIDO, Motivo.CUENTA_EXISTENTE}) {
+            doThrow(new RechazoAutenticacion(motivo)).when(service).completarRegistro("comprobante-de-prueba", "Grecia", null);
+            mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"comprobanteRegistro\":\"comprobante-de-prueba\",\"nombre\":\"Grecia\"}"))
+                .andExpect(status().is(motivo == Motivo.CUENTA_EXISTENTE ? 409 : 422))
+                .andExpect(jsonPath("$.codigo").value(motivo.name()));
+        }
+        when(service.completarRegistro("comprobante-de-prueba", "Grecia", "invalid")).thenThrow(new IllegalArgumentException());
+        mvc.perform(post(BASE + "completar-registro").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"comprobanteRegistro\":\"comprobante-de-prueba\",\"nombre\":\"Grecia\",\"avatarId\":\"invalid\"}"))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+    }
+
     @Test void solicitaCodigoSinAutenticacionNiCsrfYRecortaCorreo() throws Exception {
         var result = mvc.perform(post(BASE + "solicitar-codigo").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\" grecia@example.com \"}"))

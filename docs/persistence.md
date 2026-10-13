@@ -4,9 +4,10 @@
 
 17 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
 `dia_facil.backend.persistence.enums`. Hibernate 7.4.5.Final / Jakarta Persistence 3.2.
-El SQL v7 sigue siendo la referencia y no se ha ejecutado ni modificado.
-No hay repositories, servicios, endpoints, autenticacion, triggers, migraciones
-ni carga de datos iniciales.
+El SQL v7 sigue siendo la referencia, ahora ampliada con `cuidador.avatar_id`.
+La ampliación se entrega también en docs/sql/add-cuidador-avatar.sql; no se ha
+ejecutado contra una base real. Los servicios y endpoints de autenticación y
+registro se documentan en auth-http.md. No se habilita Flyway en este incremento.
 
 Todos los nombres fisicos son explicitos. Las relaciones apuntan desde la fila
 dependiente hacia su referencia: no hay colecciones inversas, cascadas JPA ni
@@ -27,7 +28,7 @@ asociaciones. Todos los IDs son Integer. Las longitudes String se conservan.
 
 | Tabla / entidad | PK | Campos restantes sin FK |
 |---|---|---|
-| `cuidador` → `Cuidador` | `id_cuidador` (IDENTITY) | `nombre`: String? [VARCHAR(100)]; `email`: String [VARCHAR(150)]; `estado`: EstadoCuidador; `fecha_creacion`: LocalDateTime |
+| `cuidador` → `Cuidador` | `id_cuidador` (IDENTITY) | `nombre`: String? [VARCHAR(100)], obligatorio para registrar; `avatarId`: String? [VARCHAR(32)]; `email`: String [VARCHAR(150)]; `estado`: EstadoCuidador; `fecha_creacion`: LocalDateTime |
 | `codigo_acceso` → `CodigoAcceso` | `id_codigo_acceso` (IDENTITY) | `email`: String [VARCHAR(150)]; `codigo_hash`: String [CHAR(64)]; `fecha_expiracion`: LocalDateTime; `intentos`: Integer; `usado`: Boolean; `fecha_creacion`: LocalDateTime |
 | `perfil_usuario` → `PerfilUsuario` | `id_perfil_usuario` (IDENTITY) | `nombre`: String [VARCHAR(60)]; `avatar`: String? [VARCHAR(255)]; `codigo_vinculacion`: String [VARCHAR(20)]; `fecha_renovacion_codigo`: LocalDateTime?; `estado`: EstadoPerfil; `fecha_creacion`: LocalDateTime |
 | `configuracion_perfil` → `ConfiguracionPerfil` | `id_perfil_usuario` compartida (@MapsId) | `tamano_texto`: TamanoTexto; `alto_contraste`: Boolean; `lectura_voz`: Boolean; `recordatorio_minutos`: Integer; `fecha_actualizacion`: LocalDateTime |

@@ -1,6 +1,6 @@
 # Backend DiaFacil
 
-El contrato de los dos endpoints iniciales de autenticacion, sus DTOs y
+El contrato de los endpoints de autenticacion y registro, sus DTOs y
 respuestas HTTP esta documentado en [docs/auth-http.md](docs/auth-http.md).
 Para validar esta capa sin JDBC ni SMTP real:
 
