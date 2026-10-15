@@ -167,11 +167,12 @@ Todas las respuestas de autenticación y errores incluyen `Cache-Control` con
 ## Seguridad y clientes
 
 Solo los cinco POST exactos documentados son públicos y están excluidos de CSRF.
-GET sesion y GET /api/perfiles requieren ROLE_CUIDADOR obtenido por Bearer.
+GET sesion, GET /api/perfiles, GET /api/perfiles/{idPerfilUsuario}, GET /api/perfiles/{idPerfilUsuario}/actividades y POST /api/perfiles requieren ROLE_CUIDADOR obtenido por Bearer.
 La consulta de perfiles se documenta en perfiles-http.md. Las demás rutas se deniegan.
 No hay login por formulario, HTTP Basic, JWT ni autenticación por contraseña.
 Cerrar-sesion es explícito; no se habilita el logout por formulario de Spring.
-La protección CSRF sigue habilitada fuera de esos cinco POST.
+POST /api/perfiles también está excluido de CSRF, pero exige Bearer y ROLE_CUIDADOR.
+La protección CSRF sigue habilitada fuera de esas seis rutas POST exactas.
 
 Validación local mediante AuthenticationFilter, ProviderManager y AuthenticationProvider
 de Spring Security ya instalado; el provider recibe hashes y construye Identidad.

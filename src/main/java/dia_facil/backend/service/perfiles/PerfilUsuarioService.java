@@ -15,4 +15,10 @@ public class PerfilUsuarioService {
     public List<PerfilResumen> consultar(Integer cuidadorAutenticado) {
         return List.copyOf(perfiles.consultar(cuidadorAutenticado, EstadoPerfil.ACTIVO));
     }
+
+    @Transactional(readOnly = true)
+    public PerfilResumen detalle(Integer cuidadorAutenticado, Integer idPerfilUsuario) {
+        if (idPerfilUsuario == null || idPerfilUsuario <= 0) throw RechazoPerfil.noEncontrado();
+        return perfiles.detalle(idPerfilUsuario, cuidadorAutenticado, EstadoPerfil.ACTIVO).orElseThrow(RechazoPerfil::noEncontrado);
+    }
 }

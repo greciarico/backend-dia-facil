@@ -21,6 +21,18 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(dia_facil.backend.service.perfiles.RechazoPerfil.class)
+    public ResponseEntity<ProblemDetail> perfilInvalido(dia_facil.backend.service.perfiles.RechazoPerfil error, HttpServletRequest request) {
+        int status = switch (error.codigo()) {
+            case "PERFIL_NO_ENCONTRADO" -> 404;
+            case "LIMITE_PERFILES_ALCANZADO" -> 409;
+            case "SERVICIO_NO_DISPONIBLE" -> 503;
+            default -> 400;
+        };
+        var problem = ProblemasHttp.crear(status, error.codigo(), error.getMessage(), request.getRequestURI());
+        if (error.campo() != null) problem.setProperty("errores", java.util.List.of(Map.of("campo", error.campo(), "mensaje", error.getMessage())));
+        return ProblemasHttp.respuesta(problem);
+    }
     @ExceptionHandler(dia_facil.backend.service.auth.SesionInvalidada.class)
     public ResponseEntity<ProblemDetail> sesionInvalida(dia_facil.backend.service.auth.SesionInvalidada error, HttpServletRequest request) {
         return ProblemasHttp.respuesta(ProblemasHttp.crear(401, error.renovable() ? "SESION_REQUIERE_RENOVACION" : "SESION_INVALIDA",

@@ -40,6 +40,16 @@ import org.hibernate.generator.EventType;
 })
 public class PerfilUsuario {
 
+    public static PerfilUsuario crear(Cuidador cuidador, String nombre, String avatar, String codigo) {
+        var perfil = new PerfilUsuario();
+        perfil.cuidador = cuidador;
+        perfil.nombre = nombre;
+        perfil.avatar = avatar;
+        perfil.codigoVinculacion = codigo;
+        perfil.estado = EstadoPerfil.ACTIVO;
+        return perfil;
+    }
+
     @Id
     @Setter(AccessLevel.NONE)
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -35,6 +35,12 @@ import org.hibernate.type.SqlTypes;
 })
 public class ConfiguracionPerfil {
 
+    public static ConfiguracionPerfil inicialPara(PerfilUsuario perfil) {
+        var configuracion = new ConfiguracionPerfil();
+        configuracion.perfilUsuario = perfil;
+        return configuracion;
+    }
+
     @Id
     @Setter(AccessLevel.NONE)
     @Column(name = "id_perfil_usuario", nullable = false)

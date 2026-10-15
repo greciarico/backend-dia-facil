@@ -24,4 +24,15 @@ class PerfilUsuarioServiceTest {
         assertTrue(PerfilUsuarioService.class.getMethod("consultar", Integer.class).getAnnotation(Transactional.class).readOnly());
         assertEquals(4, PoliticaPerfiles.MAXIMO_ACTIVOS);
     }
+    @Test void detalleFiltraPorPropietarioIdYEstadoSinHacerBusquedaGlobal() throws Exception {
+        var repo = mock(PerfilUsuarioRepository.class); var service = new PerfilUsuarioService(repo);
+        var profile = new PerfilResumen(12, "Persona", null);
+        when(repo.detalle(12, 3, EstadoPerfil.ACTIVO)).thenReturn(java.util.Optional.of(profile));
+        when(repo.detalle(12, 20, EstadoPerfil.ACTIVO)).thenReturn(java.util.Optional.empty());
+        assertEquals(profile, service.detalle(3, 12));
+        assertEquals("PERFIL_NO_ENCONTRADO", assertThrows(RechazoPerfil.class, () -> service.detalle(20, 12)).codigo());
+        assertThrows(RechazoPerfil.class, () -> service.detalle(3, 0));
+        verify(repo).detalle(12, 3, EstadoPerfil.ACTIVO); verify(repo).detalle(12, 20, EstadoPerfil.ACTIVO); verifyNoMoreInteractions(repo);
+        assertTrue(PerfilUsuarioService.class.getMethod("detalle", Integer.class, Integer.class).getAnnotation(Transactional.class).readOnly());
+    }
 }

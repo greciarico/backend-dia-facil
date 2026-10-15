@@ -30,7 +30,7 @@ class SecurityConfigurationTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {"/api/auth/cuidadores/solicitar-codigo", "/api/auth/cuidadores/verificar-codigo",
-        "/api/auth/cuidadores/completar-registro", "/api/perfiles/extra", "/login", "/logout"})
+        "/api/auth/cuidadores/completar-registro", "/api/perfiles/12/extra", "/login", "/logout"})
     void getNoAbreRutasNiRedirigeAlLogin(String path) throws Exception {
         var result = mvc.perform(get(path)).andExpect(status().isForbidden())
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))

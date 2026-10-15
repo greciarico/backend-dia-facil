@@ -12,6 +12,16 @@ public interface PerfilUsuarioRepository extends Repository<PerfilUsuario, Integ
     @Query("""
         select new dia_facil.backend.service.perfiles.PerfilResumen(p.idPerfilUsuario, p.nombre, p.avatar)
         from PerfilUsuario p
+        where p.idPerfilUsuario = :perfil and p.idCuidador = :cuidador and p.estado = :estado
+        """)
+    java.util.Optional<PerfilResumen> detalle(@Param("perfil") Integer perfil, @Param("cuidador") Integer cuidador,
+        @Param("estado") EstadoPerfil estado);
+
+    long countByIdCuidadorAndEstado(Integer idCuidador, EstadoPerfil estado);
+
+    @Query("""
+        select new dia_facil.backend.service.perfiles.PerfilResumen(p.idPerfilUsuario, p.nombre, p.avatar)
+        from PerfilUsuario p
         where p.idCuidador = :cuidador and p.estado = :estado
         order by p.nombre asc, p.idPerfilUsuario asc
         """)

@@ -24,13 +24,16 @@ public class SecurityConfiguration {
         var cerrar = paths.matcher(HttpMethod.POST, "/api/auth/cuidadores/cerrar-sesion");
         var sesion = paths.matcher(HttpMethod.GET, "/api/auth/cuidadores/sesion");
         var perfiles = paths.matcher(HttpMethod.GET, "/api/perfiles");
-        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles);
+        var crearPerfil = paths.matcher(HttpMethod.POST, "/api/perfiles");
+        var detallePerfil = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}");
+        var actividades = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/actividades");
+        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, actividades);
         var bearer = AutenticacionBearerCuidador.filtro(sesiones, mapper);
         bearer.setRequestMatcher(privados);
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar, renovar, cerrar).permitAll()
-                .requestMatchers(sesion, perfiles).hasRole("CUIDADOR")
+                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, actividades).hasRole("CUIDADOR")
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil))
             .addFilterBefore(bearer, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

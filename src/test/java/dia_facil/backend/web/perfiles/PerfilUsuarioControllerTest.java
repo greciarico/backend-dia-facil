@@ -22,6 +22,7 @@ class PerfilUsuarioControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean SesionCuidadorService sesiones;
     @MockitoBean PerfilUsuarioService perfiles;
+    @MockitoBean CrearPerfilService creacion;
     private static final String ACCESS = "a_" + "A".repeat(43);
     private void autenticar(int id) {
         when(sesiones.autenticar(ACCESS)).thenReturn(new SesionCuidadorService.Identidad(1L,
@@ -48,6 +49,25 @@ class PerfilUsuarioControllerTest {
         mvc.perform(get("/api/perfiles").header("Authorization", "Bearer " + ACCESS))
             .andExpect(status().isOk()).andExpect(jsonPath("$.perfiles").isEmpty());
     }
+    @Test void postDerivaPropietarioDelPrincipalYDevuelve201SinLocationFicticio() throws Exception {
+        autenticar(3); when(creacion.crear(3, "Persona", "person-01")).thenReturn(new PerfilResumen(12, "Persona", "person-01"));
+        mvc.perform(post("/api/perfiles").header("Authorization", "Bearer " + ACCESS).contentType("application/json")
+                .content("{\"nombre\":\"Persona\",\"avatar\":\"person-01\",\"idCuidador\":999,\"estado\":\"INACTIVO\"}"))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.idPerfilUsuario").value(12))
+            .andExpect(jsonPath("$.avatar").value("person-01")).andExpect(jsonPath("$.codigoVinculacion").doesNotExist())
+            .andExpect(header().doesNotExist("Location")).andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
+        verify(creacion).crear(3, "Persona", "person-01");
+    }
+    @Test void postRechazaLimiteYValidacionConCodigosControlados() throws Exception {
+        autenticar(3); when(creacion.crear(3, "Persona", null)).thenThrow(RechazoPerfil.limite());
+        mvc.perform(post("/api/perfiles").header("Authorization", "Bearer " + ACCESS).contentType("application/json").content("{\"nombre\":\"Persona\"}"))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.codigo").value("LIMITE_PERFILES_ALCANZADO"));
+        when(creacion.crear(3, "", null)).thenThrow(new RechazoPerfil("SOLICITUD_INVALIDA", "Ingresa el nombre de la persona.", "nombre"));
+        mvc.perform(post("/api/perfiles").header("Authorization", "Bearer " + ACCESS).contentType("application/json").content("{\"nombre\":\"\"}"))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errores[0].campo").value("nombre"));
+        mvc.perform(post("/api/perfiles").contentType("application/json").content("{\"nombre\":\"Persona\"}"))
+            .andExpect(status().isUnauthorized());
+    }
     @Test void noConfiaEnQueryNiIdNiRefreshComoCredencial() throws Exception {
         for (var request : List.of(get("/api/perfiles"), get("/api/perfiles").param("accessToken", ACCESS),
                 get("/api/perfiles").header("Authorization", "Bearer 3"),
@@ -70,7 +90,38 @@ class PerfilUsuarioControllerTest {
         when(perfiles.consultar(3)).thenThrow(new org.springframework.dao.DataAccessResourceFailureException("private detail"));
         mvc.perform(get("/api/perfiles").header("Authorization", "Bearer " + ACCESS))
             .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.codigo").value("SERVICIO_NO_DISPONIBLE"));
-        mvc.perform(get("/api/perfiles/12").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
-        mvc.perform(post("/api/perfiles").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/perfiles/12/extra").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
+        mvc.perform(post("/api/perfiles/extra").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
+    }
+    @Test void detalleUsaIdYPrincipalDevuelveSoloResumenSinRelacionNiCredenciales() throws Exception {
+        autenticar(3); when(perfiles.detalle(3, 12)).thenReturn(new PerfilResumen(12, "Persona", "person-01"));
+        mvc.perform(get("/api/perfiles/12").param("idCuidador", "999").header("Authorization", "Bearer " + ACCESS))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.idPerfilUsuario").value(12))
+            .andExpect(jsonPath("$.nombre").value("Persona")).andExpect(jsonPath("$.avatar").value("person-01"))
+            .andExpect(jsonPath("$.codigoVinculacion").doesNotExist()).andExpect(jsonPath("$.idCuidador").doesNotExist())
+            .andExpect(jsonPath("$.estado").doesNotExist()).andExpect(jsonPath("$.configuracion").doesNotExist())
+            .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+            .andExpect(header().doesNotExist("Set-Cookie"));
+        verify(perfiles).detalle(3, 12); verify(perfiles, never()).detalle(999, 12);
+    }
+    @Test void detalleAjenoInactivoOInexistenteTieneElMismo404() throws Exception {
+        autenticar(20);
+        for (int id : new int[] {12, 13, 999}) {
+            when(perfiles.detalle(20, id)).thenThrow(RechazoPerfil.noEncontrado());
+            mvc.perform(get("/api/perfiles/" + id).header("Authorization", "Bearer " + ACCESS))
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.codigo").value("PERFIL_NO_ENCONTRADO"))
+                .andExpect(jsonPath("$.detail").value("No pudimos encontrar este perfil."))
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
+        }
+    }
+    @Test void detalleSinBearerOConSesionInvalidaNoConsultaServicio() throws Exception {
+        mvc.perform(get("/api/perfiles/12")).andExpect(status().isUnauthorized());
+        doThrow(new SesionInvalidada(true)).when(sesiones).autenticar(ACCESS);
+        mvc.perform(get("/api/perfiles/12").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.codigo").value("SESION_REQUIERE_RENOVACION"));
+        doThrow(new SesionInvalidada(false)).when(sesiones).autenticar(ACCESS);
+        mvc.perform(get("/api/perfiles/12").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.codigo").value("SESION_INVALIDA"));
+        verifyNoInteractions(perfiles);
     }
 }
