@@ -1,0 +1,375 @@
+{
+  "iconos": [
+    {
+      "codigo": "apple",
+      "nombre": "Manzana",
+      "palabras": []
+    },
+    {
+      "codigo": "backpack",
+      "nombre": "Mochila",
+      "palabras": []
+    },
+    {
+      "codigo": "ball",
+      "nombre": "Pelota",
+      "palabras": []
+    },
+    {
+      "codigo": "bandages",
+      "nombre": "Tiritas",
+      "palabras": []
+    },
+    {
+      "codigo": "bed",
+      "nombre": "Cama",
+      "palabras": [
+        "cama",
+        "descansar",
+        "dormir"
+      ]
+    },
+    {
+      "codigo": "blocks",
+      "nombre": "Bloques",
+      "palabras": []
+    },
+    {
+      "codigo": "bread",
+      "nombre": "Pan",
+      "palabras": [
+        "cena",
+        "cenar",
+        "desayunar",
+        "desayuno",
+        "pan"
+      ]
+    },
+    {
+      "codigo": "cereal",
+      "nombre": "Cereal",
+      "palabras": []
+    },
+    {
+      "codigo": "clean-tooth",
+      "nombre": "Diente limpio",
+      "palabras": []
+    },
+    {
+      "codigo": "coffee",
+      "nombre": "Café",
+      "palabras": []
+    },
+    {
+      "codigo": "cookies",
+      "nombre": "Galletas",
+      "palabras": []
+    },
+    {
+      "codigo": "dental-cleaning",
+      "nombre": "Limpieza dental",
+      "palabras": []
+    },
+    {
+      "codigo": "dish-of-food",
+      "nombre": "Plato de comida",
+      "palabras": [
+        "almorzar",
+        "almuerzo"
+      ]
+    },
+    {
+      "codigo": "dress",
+      "nombre": "Vestido",
+      "palabras": []
+    },
+    {
+      "codigo": "fold-clothes",
+      "nombre": "Ropa doblada",
+      "palabras": []
+    },
+    {
+      "codigo": "food",
+      "nombre": "Comida",
+      "palabras": []
+    },
+    {
+      "codigo": "glass-of-water",
+      "nombre": "Vaso de agua",
+      "palabras": []
+    },
+    {
+      "codigo": "handwashing",
+      "nombre": "Lavado de manos",
+      "palabras": []
+    },
+    {
+      "codigo": "juice",
+      "nombre": "Jugo",
+      "palabras": []
+    },
+    {
+      "codigo": "laptop",
+      "nombre": "Computadora portátil",
+      "palabras": []
+    },
+    {
+      "codigo": "night",
+      "nombre": "Noche",
+      "palabras": []
+    },
+    {
+      "codigo": "notebooks",
+      "nombre": "Cuadernos",
+      "palabras": []
+    },
+    {
+      "codigo": "notes",
+      "nombre": "Notas",
+      "palabras": []
+    },
+    {
+      "codigo": "open-book",
+      "nombre": "Libro abierto",
+      "palabras": [
+        "colegio",
+        "estudiar",
+        "estudio",
+        "leer",
+        "tarea"
+      ]
+    },
+    {
+      "codigo": "order",
+      "nombre": "Orden",
+      "palabras": []
+    },
+    {
+      "codigo": "pens",
+      "nombre": "Bolígrafos",
+      "palabras": []
+    },
+    {
+      "codigo": "pill",
+      "nombre": "Pastilla",
+      "palabras": []
+    },
+    {
+      "codigo": "read",
+      "nombre": "Lectura",
+      "palabras": []
+    },
+    {
+      "codigo": "run",
+      "nombre": "Correr",
+      "palabras": []
+    },
+    {
+      "codigo": "school",
+      "nombre": "Escuela",
+      "palabras": []
+    },
+    {
+      "codigo": "school-uniform",
+      "nombre": "Uniforme escolar",
+      "palabras": []
+    },
+    {
+      "codigo": "shampoo",
+      "nombre": "Champú",
+      "palabras": []
+    },
+    {
+      "codigo": "shorts",
+      "nombre": "Pantalón corto",
+      "palabras": []
+    },
+    {
+      "codigo": "shower",
+      "nombre": "Ducha",
+      "palabras": []
+    },
+    {
+      "codigo": "sleep-mask",
+      "nombre": "Antifaz para dormir",
+      "palabras": []
+    },
+    {
+      "codigo": "snacks",
+      "nombre": "Bocadillos",
+      "palabras": []
+    },
+    {
+      "codigo": "soup",
+      "nombre": "Sopa",
+      "palabras": []
+    },
+    {
+      "codigo": "step",
+      "nombre": "Paso",
+      "palabras": []
+    },
+    {
+      "codigo": "sweep",
+      "nombre": "Barrer",
+      "palabras": []
+    },
+    {
+      "codigo": "syrup",
+      "nombre": "Jarabe",
+      "palabras": []
+    },
+    {
+      "codigo": "teddy-bear",
+      "nombre": "Osito de peluche",
+      "palabras": []
+    },
+    {
+      "codigo": "toilet-paper",
+      "nombre": "Papel higiénico",
+      "palabras": []
+    },
+    {
+      "codigo": "toothbrush",
+      "nombre": "Cepillo de dientes",
+      "palabras": []
+    },
+    {
+      "codigo": "toothpaste",
+      "nombre": "Pasta dental",
+      "palabras": []
+    },
+    {
+      "codigo": "tour",
+      "nombre": "Paseo",
+      "palabras": []
+    },
+    {
+      "codigo": "towel",
+      "nombre": "Toalla",
+      "palabras": []
+    },
+    {
+      "codigo": "traces",
+      "nombre": "Huellas",
+      "palabras": []
+    },
+    {
+      "codigo": "walk",
+      "nombre": "Caminar",
+      "palabras": [
+        "caminar",
+        "ejercicio",
+        "pasear"
+      ]
+    },
+    {
+      "codigo": "water-bottle",
+      "nombre": "Botella de agua",
+      "palabras": []
+    },
+    {
+      "codigo": "weights",
+      "nombre": "Pesas",
+      "palabras": []
+    },
+    {
+      "codigo": "yoga-mat",
+      "nombre": "Esterilla de yoga",
+      "palabras": []
+    },
+    {
+      "codigo": "yogurt",
+      "nombre": "Yogur",
+      "palabras": []
+    }
+  ],
+  "pictogramas": [
+    {
+      "nombre": "enjabonar las manos",
+      "idArasaac": 2443,
+      "fuente": "ARASAAC",
+      "palabras": [
+        "lavar",
+        "manos",
+        "higiene",
+        "jabón"
+      ]
+    },
+    {
+      "nombre": "poner la mesa",
+      "idArasaac": 5549,
+      "fuente": "ARASAAC",
+      "palabras": [
+        "mesa",
+        "cubiertos"
+      ]
+    },
+    {
+      "nombre": "servir",
+      "idArasaac": 36965,
+      "fuente": "ARASAAC",
+      "palabras": [
+        "servir",
+        "comida",
+        "plato"
+      ]
+    },
+    {
+      "nombre": "comer",
+      "idArasaac": 2349,
+      "fuente": "ARASAAC",
+      "palabras": [
+        "comer"
+      ]
+    },
+    {
+      "nombre": "secar",
+      "idArasaac": 8688,
+      "fuente": "ARASAAC",
+      "palabras": [
+        "limpiar",
+        "recoger",
+        "ordenar"
+      ]
+    }
+  ],
+  "plantillas": [
+    {
+      "nombre": "Desayunar",
+      "icono": "bread",
+      "palabras": [
+        "desayuno",
+        "desayunar",
+        "desayunando"
+      ],
+      "pasos": [
+        {
+          "orden": 1,
+          "descripcion": "Lávate las manos",
+          "pictograma": "arasaac:2443"
+        },
+        {
+          "orden": 2,
+          "descripcion": "Prepara la mesa",
+          "pictograma": "arasaac:5549"
+        },
+        {
+          "orden": 3,
+          "descripcion": "Sirve la comida",
+          "pictograma": "arasaac:36965"
+        },
+        {
+          "orden": 4,
+          "descripcion": "Come",
+          "pictograma": "arasaac:2349"
+        },
+        {
+          "orden": 5,
+          "descripcion": "Limpia y recoge",
+          "pictograma": "arasaac:8688"
+        }
+      ]
+    }
+  ]
+}

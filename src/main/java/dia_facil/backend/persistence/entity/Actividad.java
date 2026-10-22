@@ -49,9 +49,9 @@ public class Actividad {
     private PerfilUsuario perfilUsuario;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "id_pictograma", nullable = true, foreignKey = @ForeignKey(name = "fk_actividad_pictograma"))
+    @JoinColumn(name = "id_icono_actividad", nullable = true, foreignKey = @ForeignKey(name = "fk_actividad_icono"))
     @OnDelete(action = OnDeleteAction.SET_NULL)
-    private Pictograma pictograma;
+    private IconoActividad iconoActividad;
 
     @Column(name = "nombre", nullable = false, length = 80)
     private String nombre;

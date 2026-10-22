@@ -26,6 +26,11 @@ import org.hibernate.annotations.OnDeleteAction;
     @UniqueConstraint(name = "uq_plantilla_nombre", columnNames = {"nombre"})
 })
 public class PlantillaActividad {
+    public static PlantillaActividad crear(String nombre, IconoActividad icono) {
+        var plantilla = new PlantillaActividad(); plantilla.nombre = nombre;
+        plantilla.iconoActividad = icono; return plantilla;
+    }
+
 
     @Id
     @Setter(AccessLevel.NONE)
@@ -37,8 +42,8 @@ public class PlantillaActividad {
     private String nombre;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "id_pictograma", nullable = true, foreignKey = @ForeignKey(name = "fk_plantilla_pictograma"))
+    @JoinColumn(name = "id_icono_actividad", nullable = true, foreignKey = @ForeignKey(name = "fk_plantilla_icono"))
     @OnDelete(action = OnDeleteAction.SET_NULL)
-    private Pictograma pictograma;
+    private IconoActividad iconoActividad;
 }
 

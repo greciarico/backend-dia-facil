@@ -22,6 +22,11 @@ class PerfilUsuarioRepositoryTest {
         try (var factory = new MetadataSources(registry).addAnnotatedClass(Cuidador.class)
                 .addAnnotatedClass(PerfilUsuario.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.Actividad.class)
+                .addAnnotatedClass(dia_facil.backend.persistence.entity.IconoActividad.class)
+                .addAnnotatedClass(dia_facil.backend.persistence.entity.PalabraClaveIconoActividad.class)
+                .addAnnotatedClass(dia_facil.backend.persistence.entity.PlantillaActividad.class)
+                .addAnnotatedClass(dia_facil.backend.persistence.entity.PalabraClaveActividad.class)
+                .addAnnotatedClass(dia_facil.backend.persistence.entity.PlantillaPaso.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.Pictograma.class).buildMetadata().buildSessionFactory();
                 var em = factory.createEntityManager()) {
             assertNotNull(new JpaRepositoryFactory(em).getRepository(PerfilUsuarioRepository.class));
@@ -50,6 +55,8 @@ class PerfilUsuarioRepositoryTest {
             assertEquals(3, activities.getParameterValue("cuidador"));
             assertEquals(EstadoPerfil.ACTIVO, activities.getParameterValue("estadoPerfil"));
             assertEquals(active, activities.getParameterValue("estadoActividad"));
+            assertNotNull(new JpaRepositoryFactory(em).getRepository(dia_facil.backend.persistence.repository.IconoActividadRepository.class));
+            assertNotNull(new JpaRepositoryFactory(em).getRepository(dia_facil.backend.persistence.repository.PlantillaActividadRepository.class));
         } finally { StandardServiceRegistryBuilder.destroy(registry); }
     }
 }

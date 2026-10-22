@@ -2,7 +2,7 @@
 
 ## Alcance
 
-19 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
+21 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
 `dia_facil.backend.persistence.enums`. Hibernate 7.4.5.Final / Jakarta Persistence 3.2.
 El SQL v7 sigue siendo la referencia, ahora ampliada con `cuidador.avatar_id`.
 La ampliación se entrega también en docs/sql/add-cuidador-avatar.sql; no se ha
@@ -38,7 +38,9 @@ asociaciones. Todos los IDs son Integer. Las longitudes String se conservan.
 | `codigo_acceso` → `CodigoAcceso` | `id_codigo_acceso` (IDENTITY) | `email`: String [VARCHAR(150)]; `codigo_hash`: String [CHAR(64)]; `fecha_expiracion`: LocalDateTime; `intentos`: Integer; `usado`: Boolean; `fecha_creacion`: LocalDateTime |
 | `perfil_usuario` → `PerfilUsuario` | `id_perfil_usuario` (IDENTITY) | `nombre`: String [VARCHAR(60)]; `avatar`: String? [VARCHAR(255)]; `codigo_vinculacion`: String [VARCHAR(20)]; `fecha_renovacion_codigo`: LocalDateTime?; `estado`: EstadoPerfil; `fecha_creacion`: LocalDateTime |
 | `configuracion_perfil` → `ConfiguracionPerfil` | `id_perfil_usuario` compartida (@MapsId) | `tamano_texto`: TamanoTexto; `alto_contraste`: Boolean; `lectura_voz`: Boolean; `recordatorio_minutos`: Integer; `fecha_actualizacion`: LocalDateTime |
-| `pictograma` → `Pictograma` | `id_pictograma` (IDENTITY) | `nombre`: String [VARCHAR(80)]; `url_imagen`: String [VARCHAR(255)]; `fuente`: String? [VARCHAR(60)] |
+| `pictograma` → `Pictograma` | `id_pictograma` (IDENTITY) | `nombre`: String [VARCHAR(80), no único]; `id_arasaac`: Integer? [INT, UNIQUE]; `url_imagen`: String? [VARCHAR(255), solo legacy]; `fuente`: String? [VARCHAR(60)] |
+| `icono_actividad` → `IconoActividad` | `id_icono_actividad` (IDENTITY) | `codigo`: String [VARCHAR(60)], único y estable; `nombre`: String [VARCHAR(80)], etiqueta descriptiva |
+| `palabra_clave_icono_actividad` → `PalabraClaveIconoActividad` | `id_palabra_clave_icono_actividad` (IDENTITY) | `palabra`: String [VARCHAR(60)] |
 | `palabra_clave_pictograma` → `PalabraClavePictograma` | `id_palabra_clave_pictograma` (IDENTITY) | `palabra`: String [VARCHAR(60)] |
 | `plantilla_actividad` → `PlantillaActividad` | `id_plantilla_actividad` (IDENTITY) | `nombre`: String [VARCHAR(80)] |
 | `palabra_clave_actividad` → `PalabraClaveActividad` | `id_palabra_clave_actividad` (IDENTITY) | `palabra`: String [VARCHAR(60)] |
@@ -57,6 +59,11 @@ asociaciones. Todos los IDs son Integer. Las longitudes String se conservan.
 Se conservan los nombres de todas las FK del SQL. ON DELETE es comportamiento
 de MySQL configurado con `@OnDelete`, distinto de `CascadeType.REMOVE`.
 No se propagan persist/merge/remove hacia padres o catalogos.
+
+Iconos de actividad: `IconoActividad` y `PalabraClaveIconoActividad` separan los
+recursos 3D propios de los pictogramas de pasos. Ver [la transición por fases](iconos-actividad.md).
+Las columnas/FK antiguas de actividad y plantilla solo se eliminan mediante SQL
+manual revisado, después de verificar el traslado; no por ddl-auto=update.
 Despues de borrados fisicos con CASCADE/SET NULL, limpiar o refrescar el contexto
 de persistencia antes de reutilizar objetos que puedan haber quedado obsoletos.
 No se habilita cache de segundo nivel en esta etapa.
@@ -69,10 +76,12 @@ No se habilita cache de segundo nivel en esta etapa.
 | `configuracion_perfil` | `id_perfil_usuario` → `perfil_usuario` (obligatoria; OneToOne; ON DELETE CASCADE) | Sin UNIQUE adicional | Sin indice explicito adicional |
 | `pictograma` | Sin FK | `uq_pictograma_nombre(nombre)` | Sin indice explicito adicional |
 | `palabra_clave_pictograma` | `id_pictograma` → `pictograma` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_palabra_pictograma(id_pictograma,palabra)` | `idx_palabra_pictograma(palabra)` |
-| `plantilla_actividad` | `id_pictograma` → `pictograma` (opcional; ManyToOne; ON DELETE SET NULL) | `uq_plantilla_nombre(nombre)` | Sin indice explicito adicional |
+| `icono_actividad` | Sin FK | `uq_icono_actividad_codigo(codigo)` | Sin índice explícito adicional |
+| `palabra_clave_icono_actividad` | `id_icono_actividad` → `icono_actividad` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_palabra_icono_actividad(id_icono_actividad,palabra)` | `idx_palabra_icono_actividad(palabra)` |
+| `plantilla_actividad` | `id_icono_actividad` → `icono_actividad` (opcional; ManyToOne; ON DELETE SET NULL) | `uq_plantilla_nombre(nombre)` | Sin indice explicito adicional |
 | `palabra_clave_actividad` | `id_plantilla_actividad` → `plantilla_actividad` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_palabra_actividad(id_plantilla_actividad,palabra)` | `idx_palabra_actividad(palabra)` |
-| `plantilla_paso` | `id_plantilla_actividad` → `plantilla_actividad` (obligatoria; ManyToOne; ON DELETE CASCADE); `id_pictograma` → `pictograma` (opcional; ManyToOne; ON DELETE SET NULL) | Sin UNIQUE adicional | `idx_plantilla_paso_orden(id_plantilla_actividad,orden)` |
-| `actividad` | `id_perfil_usuario` → `perfil_usuario` (obligatoria; ManyToOne; ON DELETE CASCADE); `id_pictograma` → `pictograma` (opcional; ManyToOne; ON DELETE SET NULL) | Sin UNIQUE adicional | `idx_actividad_agenda(id_perfil_usuario,estado,hora)` |
+| `plantilla_paso` | `id_plantilla_actividad` → `plantilla_actividad` (obligatoria; ManyToOne; ON DELETE CASCADE); `id_pictograma` → `pictograma` (opcional; ManyToOne; ON DELETE SET NULL) | `uq_plantilla_paso_orden(id_plantilla_actividad,orden)` | Sin índice redundante de la misma pareja |
+| `actividad` | `id_perfil_usuario` → `perfil_usuario` (obligatoria; ManyToOne; ON DELETE CASCADE); `id_icono_actividad` → `icono_actividad` (opcional; ManyToOne; ON DELETE SET NULL) | Sin UNIQUE adicional | `idx_actividad_agenda(id_perfil_usuario,estado,hora)` |
 | `paso_actividad` | `id_actividad` → `actividad` (obligatoria; ManyToOne; ON DELETE CASCADE); `id_pictograma` → `pictograma` (opcional; ManyToOne; ON DELETE SET NULL) | Sin UNIQUE adicional | `idx_paso_actividad_orden(id_actividad,orden)` |
 | `dispositivo` | `id_perfil_usuario` → `perfil_usuario` (obligatoria; ManyToOne; ON DELETE CASCADE) | Sin UNIQUE adicional | `idx_dispositivo_perfil_estado(id_perfil_usuario,estado)` |
 | `ejecucion_actividad` | `id_actividad` → `actividad` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_ejecucion_actividad_fecha(id_actividad,fecha)` | `idx_ejecucion_fecha(fecha)` |
@@ -181,7 +190,9 @@ La coherencia de las combinaciones de ayuda y de actividad/ejecucion/paso,
 la creacion de configuracion, la primera guia, OTP, vinculacion, copia de
 plantillas, notificaciones y borrado logico requieren servicios futuros.
 Los estados y el campo activo no interceptan automaticamente un remove().
-El catalogo inicial y la plantilla Desayunar no se cargan en esta tarea.
+El catálogo funcional y Desayunar se cargan desde datos-base.json al arrancar,
+con política aditiva y conservación de diferencias. Ver [datos base](datos-base.md).
+No se copian plantillas a actividades reales ni se actualizan copias existentes.
 
 ## Pruebas sin MySQL ni Docker
 
@@ -215,7 +226,7 @@ pruebas de metadatos y sin esa prueba:
 No ejecutada en esta tarea. Usar una instancia aislada, con base diafacil vacia
 y credenciales configuradas privadamente; no apuntar a la base de trabajo.
 
-1. Arrancar el backend con perfil local. Hibernate debe crear 17 tablas,
+1. Arrancar el backend con perfil local. Hibernate debe crear 21 tablas,
    sin triggers, datos iniciales ni flyway_schema_history.
 2. Inspeccionar SHOW CREATE TABLE e information_schema para verificar tipos,
    nulabilidad, enums, defaults, UNIQUE, indices, CHECK y acciones de FK.

@@ -21,6 +21,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(dia_facil.backend.service.actividades.ArasaacClient.NoDisponible.class)
+    public ResponseEntity<ProblemDetail> pictogramasNoDisponibles(HttpServletRequest request) {
+        return ProblemasHttp.respuesta(ProblemasHttp.crear(503, "PICTOGRAMAS_NO_DISPONIBLES",
+            "No pudimos consultar los pictogramas. Inténtalo de nuevo.", request.getRequestURI()));
+    }
     @ExceptionHandler(dia_facil.backend.service.perfiles.RechazoPerfil.class)
     public ResponseEntity<ProblemDetail> perfilInvalido(dia_facil.backend.service.perfiles.RechazoPerfil error, HttpServletRequest request) {
         int status = switch (error.codigo()) {

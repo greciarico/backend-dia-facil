@@ -17,9 +17,21 @@ import lombok.Setter;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "pictograma", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_pictograma_nombre", columnNames = {"nombre"})
+    @UniqueConstraint(name = "uq_pictograma_arasaac", columnNames = {"id_arasaac"})
 })
 public class Pictograma {
+    public static Pictograma crear(String nombre, String urlImagen, String fuente) {
+        var pictograma = new Pictograma(); pictograma.nombre = nombre;
+        pictograma.urlImagen = urlImagen; pictograma.fuente = fuente; return pictograma;
+    }
+
+    public static Pictograma crearArasaac(String nombre, Integer idArasaac) {
+        if (idArasaac == null || idArasaac <= 0) throw new IllegalArgumentException();
+        var pictograma = crear(nombre, null, "ARASAAC");
+        pictograma.idArasaac = idArasaac;
+        return pictograma;
+    }
+
 
     @Id
     @Setter(AccessLevel.NONE)
@@ -30,8 +42,12 @@ public class Pictograma {
     @Column(name = "nombre", nullable = false, length = 80)
     private String nombre;
 
-    @Column(name = "url_imagen", nullable = false, length = 255)
+    // Legacy locator only. ARASAAC images are resolved from idArasaac in DTOs.
+    @Column(name = "url_imagen", length = 255)
     private String urlImagen;
+
+    @Column(name = "id_arasaac")
+    private Integer idArasaac;
 
     @Column(name = "fuente", nullable = true, length = 60)
     private String fuente;
