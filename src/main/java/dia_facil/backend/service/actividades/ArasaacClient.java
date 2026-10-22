@@ -44,6 +44,22 @@ public class ArasaacClient {
             throw new NoDisponible();
         }
     }
+    public PictogramaArasaac detalle(Integer id) {
+        try {
+            return client.get().uri("/pictograms/es/{id}", id).accept(MediaType.APPLICATION_JSON)
+                .exchange((request, response) -> {
+                    if (response.getStatusCode().value() == 404) throw RechazoActividad.pictograma();
+                    if (response.getStatusCode().value() != 200) throw new NoDisponible();
+                    var bytes = response.getBody().readNBytes(MAX_RESPONSE_BYTES + 1);
+                    if (bytes.length > MAX_RESPONSE_BYTES) throw new NoDisponible();
+                    var nodo = mapper.readTree(bytes);
+                    var resultado = interpretar(mapper.createArrayNode().add(nodo));
+                    if (resultado.size() != 1 || !id.equals(resultado.getFirst().idArasaac())) throw new NoDisponible();
+                    return resultado.getFirst();
+                });
+        } catch (RechazoActividad error) { throw error; }
+        catch (RuntimeException error) { throw new NoDisponible(); }
+    }
     static List<PictogramaArasaac> interpretar(JsonNode raiz) {
         if (raiz == null || !raiz.isArray()) throw new NoDisponible();
         var resultado = new ArrayList<PictogramaArasaac>(); var ids = new HashSet<Integer>();

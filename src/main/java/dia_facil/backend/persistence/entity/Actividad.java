@@ -36,6 +36,10 @@ import org.hibernate.type.SqlTypes;
     @Index(name = "idx_actividad_agenda", columnList = "id_perfil_usuario,estado,hora")
 })
 public class Actividad {
+    public static Actividad crear(PerfilUsuario perfil, String nombre, LocalTime hora, IconoActividad icono) {
+        var actividad = new Actividad(); actividad.perfilUsuario = perfil; actividad.nombre = nombre;
+        actividad.hora = hora; actividad.iconoActividad = icono; return actividad;
+    }
 
     @Id
     @Setter(AccessLevel.NONE)

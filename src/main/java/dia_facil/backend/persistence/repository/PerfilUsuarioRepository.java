@@ -9,6 +9,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 public interface PerfilUsuarioRepository extends Repository<PerfilUsuario, Integer> {
+    java.util.Optional<PerfilUsuario> findByIdPerfilUsuarioAndIdCuidadorAndEstado(Integer perfil, Integer cuidador, EstadoPerfil estado);
     @Query("""
         select new dia_facil.backend.service.perfiles.PerfilResumen(p.idPerfilUsuario, p.nombre, p.avatar)
         from PerfilUsuario p

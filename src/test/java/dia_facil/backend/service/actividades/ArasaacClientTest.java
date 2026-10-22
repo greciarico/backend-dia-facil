@@ -16,6 +16,30 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 class ArasaacClientTest {
+    @Test void detalleOficialValidaIdSinCredencialesYCacheEvitaConsultaInnecesaria() {
+        var builder = RestClient.builder().baseUrl("https://api.arasaac.org/v1");
+        var server = MockRestServiceServer.bindTo(builder).build();
+        server.expect(requestTo("https://api.arasaac.org/v1/pictograms/es/123")).andExpect(headerDoesNotExist("Authorization"))
+            .andExpect(headerDoesNotExist("Cookie")).andRespond(withSuccess("{\"_id\":123,\"keywords\":[{\"keyword\":\"Oficial\"}]}",MediaType.APPLICATION_JSON));
+        assertEquals(PictogramaArasaac.de(123,"Oficial"),new ArasaacClient(builder.build(),JsonMapper.builder().build()).detalle(123)); server.verify();
+        var client=mock(ArasaacClient.class); var clock=mock(Clock.class);
+        when(client.buscar("lavar")).thenReturn(List.of(PictogramaArasaac.de(123,"Oficial")));
+        var service=new PictogramaArasaacService(client,clock); service.buscar("lavar");
+        assertEquals(123,service.resolver(123).idArasaac()); verify(client,never()).detalle(any());
+        when(clock.millis()).thenReturn(300_001L); when(client.detalle(123)).thenReturn(PictogramaArasaac.de(123,"Oficial"));
+        assertEquals(123,service.resolver(123).idArasaac()); verify(client).detalle(123);
+    }
+    @Test void detalleInexistenteEsInvalidoPeroIdDistintoOFalloDelProveedorSonIndisponibilidad() {
+        for (var kind : List.of("404","wrong-id","http")) {
+            var builder=RestClient.builder().baseUrl("https://api.arasaac.org/v1"); var server=MockRestServiceServer.bindTo(builder).build();
+            server.expect(anything()).andRespond(kind.equals("404")?withStatus(HttpStatus.NOT_FOUND):kind.equals("http")?withServerError()
+                :withSuccess("{\"_id\":456,\"keywords\":[{\"keyword\":\"Otra\"}]}",MediaType.APPLICATION_JSON));
+            var client=new ArasaacClient(builder.build(),JsonMapper.builder().build());
+            if(kind.equals("404")) assertThrows(RechazoActividad.class,()->client.detalle(123));
+            else assertThrows(ArasaacClient.NoDisponible.class,()->client.detalle(123));
+            server.verify();
+        }
+    }
     // Synthetic fixtures, not proposed default IDs for Desayunar.
     private static final String JSON = "[{\"_id\":123,\"keywords\":[{\"keyword\":\"lavar\"}],\"internal\":true}]";
     @Test void consultaSoloMetadataCodificadaSinBearerNiCookies() {

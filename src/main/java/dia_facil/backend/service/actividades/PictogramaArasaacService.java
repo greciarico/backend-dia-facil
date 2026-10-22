@@ -16,6 +16,16 @@ public class PictogramaArasaacService {
     @Autowired public PictogramaArasaacService(ArasaacClient client) { this(client, Clock.systemUTC()); }
     PictogramaArasaacService(ArasaacClient client, Clock clock) { this.client = client; this.clock = clock; }
 
+    public PictogramaArasaac resolver(Integer id) {
+        if (id == null || id <= 0) throw RechazoActividad.pictograma();
+        synchronized (cache) {
+            for (var entrada : cache.values()) if (entrada.vence() > clock.millis()) {
+                for (var dato : entrada.datos()) if (id.equals(dato.idArasaac())) return dato;
+            }
+        }
+        return client.detalle(id);
+    }
+
     public List<PictogramaArasaac> buscar(String texto) {
         if (texto == null) return List.of();
         if (texto.length() > 120) throw new IllegalArgumentException();

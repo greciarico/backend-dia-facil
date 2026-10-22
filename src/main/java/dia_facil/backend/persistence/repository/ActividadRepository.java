@@ -11,8 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface ActividadRepository extends Repository<Actividad, Integer> {
     @Query("""
-        select new dia_facil.backend.service.actividades.ActividadResumen(a.idActividad, a.nombre)
-        from Actividad a join a.perfilUsuario p
+        select new dia_facil.backend.service.actividades.ActividadResumen(a.idActividad, a.nombre, a.hora, i.codigo)
+        from Actividad a join a.perfilUsuario p left join a.iconoActividad i
         where p.idPerfilUsuario = :perfil and p.idCuidador = :cuidador
           and p.estado = :estadoPerfil and a.estado = :estadoActividad
         order by a.idActividad asc

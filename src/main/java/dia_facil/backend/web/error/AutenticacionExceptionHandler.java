@@ -21,6 +21,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(dia_facil.backend.service.actividades.RechazoActividad.class)
+    public ResponseEntity<ProblemDetail> actividadInvalida(dia_facil.backend.service.actividades.RechazoActividad error, HttpServletRequest request) {
+        var problema = ProblemasHttp.crear("CONFLICTO_CREACION".equals(error.codigo()) ? 409 : 400,
+            error.codigo(), error.getMessage(), request.getRequestURI());
+        if (error.campo() != null) problema.setProperty("errores", java.util.List.of(Map.of("campo", error.campo(), "mensaje", error.getMessage())));
+        return ProblemasHttp.respuesta(problema);
+    }
     @ExceptionHandler(dia_facil.backend.service.actividades.ArasaacClient.NoDisponible.class)
     public ResponseEntity<ProblemDetail> pictogramasNoDisponibles(HttpServletRequest request) {
         return ProblemasHttp.respuesta(ProblemasHttp.crear(503, "PICTOGRAMAS_NO_DISPONIBLES",

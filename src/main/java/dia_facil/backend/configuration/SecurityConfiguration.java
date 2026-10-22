@@ -27,16 +27,17 @@ public class SecurityConfiguration {
         var crearPerfil = paths.matcher(HttpMethod.POST, "/api/perfiles");
         var detallePerfil = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}");
         var actividades = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/actividades");
+        var crearActividad = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/actividades");
         var iconos = paths.matcher(HttpMethod.GET, "/api/iconos-actividad");
         var plantilla = paths.matcher(HttpMethod.GET, "/api/plantillas-actividad/sugerencia");
         var pictogramas = paths.matcher(HttpMethod.GET, "/api/pictogramas/arasaac");
-        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, actividades, iconos, plantilla, pictogramas);
+        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, actividades, crearActividad, iconos, plantilla, pictogramas);
         var bearer = AutenticacionBearerCuidador.filtro(sesiones, mapper);
         bearer.setRequestMatcher(privados);
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar, renovar, cerrar).permitAll()
-                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, actividades, iconos, plantilla, pictogramas).hasRole("CUIDADOR")
+                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, actividades, crearActividad, iconos, plantilla, pictogramas).hasRole("CUIDADOR")
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad))
             .addFilterBefore(bearer, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import dia_facil.backend.persistence.entity.IconoActividad;
 
 public interface IconoActividadRepository extends JpaRepository<IconoActividad, Integer> {
+    java.util.Optional<IconoActividad> findByCodigo(String codigo);
     interface Fila {
         String getCodigo();
         String getNombre();

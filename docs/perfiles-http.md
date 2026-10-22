@@ -104,10 +104,11 @@ GET de colección ni POST. No expone la entidad JPA ni códigos de vinculación.
 {"actividades":[]}
 ```
 
-Si hay datos, cada elemento contiene únicamente `idActividad` y `nombre`:
+Desde el incremento C, cada elemento contiene `idActividad`, `nombre`, `hora`
+y `codigoIcono` nullable. Contrato completo: [actividades HTTP](actividades-http.md).
 
 ```json
-{"actividades":[{"idActividad":7,"nombre":"Desayunar"}]}
+{"actividades":[{"idActividad":7,"nombre":"Desayunar","hora":"07:00","codigoIcono":"bread"}]}
 ```
 
 Antes de leer actividades se comprueba el perfil mediante el detalle existente:
@@ -116,10 +117,9 @@ restringe también esos datos y estado ACTIVA; orden estable por ID. No acepta
 idCuidador del cliente como autoridad. Ajeno, inactivo e inexistente conservan
 404 PERFIL_NO_ENCONTRADO, nunca una lista vacía. IDs no positivos siguen el mismo
 404; formato no entero, 400. Sesión y errores de infraestructura conservan el
-contrato existente. Solo este GET se habilita; no se añade POST de actividades.
+contrato existente. El incremento C habilita también el POST privado de actividades.
 
 La lista representa definiciones activas, sin filtro por fecha. No consulta
-EjecucionActividad ni expone hora, pictogramas, pasos, relaciones internas o progreso.
-Esos campos/capacidades se incorporarán en sus incrementos correspondientes.
-La UI actual presenta el vacío solo si la lista real está vacía; una lista con
-datos tiene un aviso neutral, sin simular agenda ni descartarla como vacío.
+EjecucionActividad ni expone pictogramas de pasos, pasos, relaciones internas o
+progreso. La UI presenta el vacío solo si la lista real está vacía; con datos
+muestra nombre, hora e icono sin simular ejecuciones diarias.

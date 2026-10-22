@@ -29,6 +29,10 @@ import org.hibernate.type.SqlTypes;
     @Index(name = "idx_paso_actividad_orden", columnList = "id_actividad,orden")
 })
 public class PasoActividad {
+    public static PasoActividad crear(Actividad actividad, Integer orden, String descripcion, Pictograma pictograma) {
+        var paso = new PasoActividad(); paso.actividad = actividad; paso.orden = orden;
+        paso.descripcion = descripcion; paso.pictograma = pictograma; return paso;
+    }
 
     @Id
     @Setter(AccessLevel.NONE)

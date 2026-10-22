@@ -1,7 +1,8 @@
 # Pictogramas ARASAAC — piloto de pasos
 
 IconoActividad sigue representando actividades con sus 52 PNG propios. Solo
-PlantillaPaso y PasoActividad usan Pictograma. No hay POST de actividades.
+PlantillaPaso y PasoActividad usan Pictograma. El incremento C incorpora el
+[POST de actividades](actividades-http.md) que resuelve selecciones por idArasaac.
 
 ## HTTP
 
