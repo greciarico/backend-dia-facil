@@ -13,6 +13,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import dia_facil.backend.service.auth.SesionCuidadorService;
 
 @Configuration(proxyBeanMethods = false)
+@org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication(type = org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type.SERVLET)
 public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper mapper, ObjectProvider<SesionCuidadorService> sesiones) throws Exception {
@@ -26,18 +27,20 @@ public class SecurityConfiguration {
         var perfiles = paths.matcher(HttpMethod.GET, "/api/perfiles");
         var crearPerfil = paths.matcher(HttpMethod.POST, "/api/perfiles");
         var detallePerfil = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}");
+        var vinculacion = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/vinculacion");
+        var renovarCodigo = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/vinculacion/renovar-codigo");
         var actividades = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/actividades");
         var crearActividad = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/actividades");
         var iconos = paths.matcher(HttpMethod.GET, "/api/iconos-actividad");
         var plantilla = paths.matcher(HttpMethod.GET, "/api/plantillas-actividad/sugerencia");
         var pictogramas = paths.matcher(HttpMethod.GET, "/api/pictogramas/arasaac");
-        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, actividades, crearActividad, iconos, plantilla, pictogramas);
+        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas);
         var bearer = AutenticacionBearerCuidador.filtro(sesiones, mapper);
         bearer.setRequestMatcher(privados);
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar, renovar, cerrar).permitAll()
-                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, actividades, crearActividad, iconos, plantilla, pictogramas).hasRole("CUIDADOR")
+                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas).hasRole("CUIDADOR")
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, renovarCodigo))
             .addFilterBefore(bearer, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

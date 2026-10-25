@@ -22,6 +22,7 @@ class PerfilUsuarioRepositoryTest {
         try (var factory = new MetadataSources(registry).addAnnotatedClass(Cuidador.class)
                 .addAnnotatedClass(PerfilUsuario.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.Actividad.class)
+                .addAnnotatedClass(dia_facil.backend.persistence.entity.EjecucionActividad.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.IconoActividad.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.PalabraClaveIconoActividad.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.PlantillaActividad.class)

@@ -202,3 +202,13 @@ C	palabra_clave_icono_actividad	palabra	VARCHAR(60)	false	-	false	false
 F	palabra_clave_icono_actividad	fk_palabra_icono_actividad	id_icono_actividad	icono_actividad	id_icono_actividad	CASCADE
 U	palabra_clave_icono_actividad	uq_palabra_icono_actividad	id_icono_actividad,palabra
 I	palabra_clave_icono_actividad	idx_palabra_icono_actividad	palabra
+
+T	credencial_dispositivo	CredencialDispositivo	id_credencial_dispositivo
+C	credencial_dispositivo	id_credencial_dispositivo	BIGINT	false	-	true	false
+C	credencial_dispositivo	token_hash	BINARY(32)	false	-	false	false
+C	credencial_dispositivo	id_dispositivo	INT	true	-	false	false
+C	credencial_dispositivo	preparacion_hasta	DATETIME(6)	true	-	false	false
+F	credencial_dispositivo	fk_credencial_dispositivo	id_dispositivo	dispositivo	id_dispositivo	CASCADE
+U	credencial_dispositivo	uq_dispositivo_token	token_hash
+U	credencial_dispositivo	uq_credencial_dispositivo	id_dispositivo
+I	credencial_dispositivo	idx_preparacion_dispositivo	preparacion_hasta

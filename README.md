@@ -56,6 +56,20 @@ El `.gitignore` raiz excluye la copia local y permite versionar la configuracion
 general y la plantilla. Ignorar un archivo en Git no protege archivos ya
 versionados ni sustituye la revision de secretos antes de publicar.
 
+### Vinculación de dispositivos (E3) en local
+
+La plantilla local incluye `diafacil.dispositivos.enabled=true`. En copias locales
+anteriores, agregar esa propiedad sin sustituir el archivo ni sus credenciales.
+La configuración general conserva `false`: el perfil local debe estar activo.
+Reiniciar Spring Boot después del cambio para registrar los endpoints de E3.
+
+Antes de probar sobre una BD existente, revisar la
+[auditoría y transición segura de E3](docs/dispositivos-e3.md). La guarda de
+arranque verifica esquema y códigos vigentes; no se debe desactivarla para
+eludir conflictos. No hay migración de códigos automática. Con E3 desactivado,
+los endpoints devuelven 503 `SERVICIO_NO_DISPONIBLE`, nunca un 404 de recurso
+estático como sustituto de la desactivación.
+
 ## Creacion de la base y del esquema
 
 La URL JDBC incluye `createDatabaseIfNotExist=true`: Connector/J intenta crear
