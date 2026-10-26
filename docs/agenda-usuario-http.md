@@ -66,9 +66,9 @@ Es un DTO proyectado, no una entidad: sin pasos/pictogramas, progreso ni relacio
 JPA. Comparte el cálculo temporal de agenda; consulta solo la ejecución del día
 actual de Lima mediante LEFT JOIN con fecha en ON. La bandera es por actividad,
 independiente del estado diario. GET es transaccional readOnly y no crea ni
-modifica ejecuciones, actividades o ProgresoPaso. No hay endpoint de finalización
-en este incremento. En un comando futuro deberá validarse nuevamente en backend
-que la primera guía esté completada antes de permitir el modo DIRECTA.
+modifica ejecuciones, actividades o ProgresoPaso. Los comandos de guía y
+finalización están separados y documentados en [ejecución de Usuario](ejecucion-usuario-http.md).
+Backend exige la primera guía completa antes de permitir el modo DIRECTA.
 
 ## Salida local y reconexión
 

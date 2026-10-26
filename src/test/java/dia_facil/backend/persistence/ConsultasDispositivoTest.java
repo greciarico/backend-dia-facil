@@ -16,6 +16,9 @@ class ConsultasDispositivoTest {
             .applySetting("hibernate.hbm2ddl.auto","none").build();
         var sources=new MetadataSources(registry);PersistenceModelTest.ENTITIES.forEach(sources::addAnnotatedClass);
         try(var factory=sources.buildMetadata().buildSessionFactory();var em=factory.createEntityManager()) {
+            assertNotNull(em.createQuery("select e from EjecucionActividad e where e.actividad.idActividad=:actividad and e.fecha=:fecha",EjecucionActividad.class));
+            assertNotNull(em.createQuery("select p from PasoActividad p left join fetch p.pictograma where p.actividad.idActividad=:actividad and p.activo=true order by p.orden,p.idPasoActividad",PasoActividad.class));
+            assertNotNull(em.createQuery("select p from ProgresoPaso p join fetch p.pasoActividad where p.ejecucionActividad.idEjecucionActividad=:ejecucion",ProgresoPaso.class));
             var repository=new org.springframework.data.jpa.repository.support.JpaRepositoryFactory(em)
                 .getRepository(dia_facil.backend.persistence.repository.ActividadRepository.class);
             assertNotNull(repository); // Spring Data validates both projection queries against the real mapping.

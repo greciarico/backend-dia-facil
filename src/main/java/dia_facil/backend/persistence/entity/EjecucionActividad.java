@@ -41,6 +41,9 @@ import org.hibernate.generator.EventType;
     @CheckConstraint(name = "chk_ejecucion_cierre", constraint = "( estado = 'COMPLETADA' AND modo_finalizacion IS NOT NULL AND fecha_fin IS NOT NULL ) OR ( estado = 'EN_PROGRESO' AND modo_finalizacion IS NULL AND fecha_fin IS NULL )")
 })
 public class EjecucionActividad {
+    public static EjecucionActividad iniciar(Actividad actividad, LocalDate fecha) {
+        var ejecucion = new EjecucionActividad(); ejecucion.actividad = actividad; ejecucion.fecha = fecha; return ejecucion;
+    }
 
     @Id
     @Setter(AccessLevel.NONE)

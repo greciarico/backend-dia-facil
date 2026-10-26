@@ -21,6 +21,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(dia_facil.backend.service.actividades.RechazoGuia.class)
+    public ResponseEntity<ProblemDetail> guiaInvalida(dia_facil.backend.service.actividades.RechazoGuia error,HttpServletRequest request){
+        return ProblemasHttp.respuesta(ProblemasHttp.crear(error.status(),error.codigo(),error.getMessage(),request.getRequestURI()));
+    }
     @ExceptionHandler(dia_facil.backend.service.dispositivos.RechazoDispositivo.class)
     public ResponseEntity<ProblemDetail> dispositivoInvalido(dia_facil.backend.service.dispositivos.RechazoDispositivo error, HttpServletRequest request) {
         return ProblemasHttp.respuesta(ProblemasHttp.crear(error.status(), error.codigo(), error.getMessage(), request.getRequestURI()));
