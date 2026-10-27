@@ -1,15 +1,15 @@
-# Sugerencia de plantilla y borrador de actividad — incremento B
+# Sugerencia de plantilla y borrador de actividad
 
 Actualización ARASAAC: el descriptor de pictograma admite fuente, idArasaac y
 urlImagen calculada. Desayunar usa 2443, 5549, 36965, 2349 y 8688 tras el backfill aprobado. Conserva
 idPictograma y nombre. Ver [contrato ARASAAC](pictogramas-arasaac.md). Las notas
-inferiores sobre ausencia de imágenes describen el estado previo: el editor ahora
-admite miniaturas y selección ARASAAC en memoria, sin POST de actividades.
+inferiores conservan las decisiones del borrador B, ampliado posteriormente con
+ARASAAC y [creación real C](actividades-http.md). El GET sigue siendo solo lectura.
 
 `GET /api/plantillas-actividad/sugerencia?nombre=Desayunar`, con Bearer de cuidador.
 200 y `Cache-Control: no-store`. El catálogo es global del sistema; no recibe
 idCuidador ni modifica un perfil. La pantalla mantiene su consulta autorizada del
-perfil ACTIVO mediante el GET existente. No existe POST de actividades en B.
+perfil ACTIVO mediante el GET existente. Crear una definición es un comando separado.
 
 ```json
 {
@@ -20,7 +20,7 @@ perfil ACTIVO mediante el GET existente. No existe POST de actividades en B.
       {
         "orden": 1,
         "descripcion": "Lávate las manos",
-        "pictograma": { "idPictograma": 9, "nombre": "Lavarse las manos" }
+        "pictograma": { "idPictograma": 9, "nombre": "enjabonar las manos", "fuente": "ARASAAC", "idArasaac": 2443, "urlImagen": "https://static.arasaac.org/pictograms/2443/2443_300.png" }
       }
     ]
   }
@@ -29,7 +29,7 @@ perfil ACTIVO mediante el GET existente. No existe POST de actividades en B.
 
 IDs ilustrativos: siempre se utilizan los reales de BD. Devuelve todos los pasos
 ordenados; pictograma admite null. Sin coincidencia devuelve `{"plantilla":null}`.
-No expone entidades, URL de imagen ni IDs de PlantillaPaso.
+No expone entidades ni IDs de PlantillaPaso; URL de ARASAAC calculada, no persistida.
 
 ## Detección
 
@@ -51,7 +51,7 @@ La hora corresponde a LocalTime del modelo. El estado conserva minutos locales
 desde medianoche (0–1439), inicialmente null. El selector nativo ya instalado
 usa Date solo como adaptador, sin guardar fecha, UTC ni zona horaria. Cancelar
 conserva el valor anterior. UI: Selecciona una hora; luego 07:00 a. m., etc.
-No se envía hora ni pasos a backend en este incremento.
+Seleccionar hora no realiza escrituras; hora/pasos se envían únicamente al POST final.
 
 La detección usa su propia petición desde tres caracteres, debounce de 250 ms y
 cancelación; es independiente de las sugerencias de iconos. Una respuesta inválida
@@ -70,23 +70,23 @@ personalizados. La elección de icono, hora o nombre no altera esa marca.
 Cada paso tiene clave local estable, orden consecutivo desde 1, descripción y
 referencia opcional al pictograma. Agregar/editar utiliza un modal: trim exterior,
 texto obligatorio, máximo 120 caracteres y Cancelar sin cambios. Editar conserva
-su referencia al pictograma; los pasos propios usan null. Eliminar requiere
-confirmación. Subir/Bajar en el menú de cada fila conserva claves y recalcula
-órdenes; extremos deshabilitados y anuncio accesible. No hay drag & drop.
+su referencia al pictograma; pasos propios admiten selección ARASAAC o null.
+Eliminar requiere confirmación. Drag & drop desde handle conserva claves y
+recalcula órdenes; acciones accesibles Subir/Bajar continúan disponibles.
 
 No se impone un máximo funcional inventado. La única barrera técnica de cantidad
 es 65535 posiciones por SMALLINT UNSIGNED. Cero pasos es válido temporalmente en
-el borrador; la política final de creación se resolverá en C.
+el borrador; [creación C](actividades-http.md) exige mínimo un paso válido.
 
-Los pictogramas actuales tienen URLs relativas sin archivos renderizables locales.
-Las filas muestran número y texto sin imágenes, placeholders ficticios ni emojis.
-Se conservan las referencias para una integración visual posterior, sin ARASAAC,
-Cloudinary ni imágenes externas en B.
+Los cinco predeterminados de Desayunar entregan referencias ARASAAC estables.
+Las filas muestran miniatura y texto; si falta/falla imagen se conserva fallback
+neutro. Agregar/Editar busca mediante el [contrato ARASAAC](pictogramas-arasaac.md),
+sin catálogo completo, selección automática ni Cloudinary.
 
-Crear actividad permanece deshabilitado. Hora y borrador viven en la pantalla y
+Hora y borrador viven en la pantalla y
 se descartan al abandonarla; no hay SecureStore, autosave ni contexto de perfil
-seleccionado. En C se crearán Actividad y PasoActividad propios sin sincronizar
-actualizaciones futuras de plantillas. No se modificó JPA, SQL ni datos base.
+seleccionado. El POST C crea Actividad y PasoActividad propios sin sincronizar
+actualizaciones futuras de plantillas. Esta consulta no modifica plantillas/datos base.
 
 ## Validación
 

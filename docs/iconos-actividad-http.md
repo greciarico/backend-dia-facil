@@ -47,7 +47,7 @@ el nombre ni impide elegir cualquier icono. Códigos desconocidos o imágenes
 fallidas quedan no seleccionables, sin inventar un reemplazo.
 
 Nombre e icono solo viven en memoria de la pantalla. El incremento B añade
-[hora y pasos en memoria](plantillas-actividad-http.md), sin modificar esta búsqueda
-ni la selección de iconos. Crear actividad permanece deshabilitado; todavía no
-hay POST ni agenda con datos. Flecha y Atrás de Android regresan a Actividades del
+[hora y pasos](plantillas-actividad-http.md), sin modificar esta búsqueda
+ni la selección de iconos. Posteriormente [C/D](actividades-http.md) habilitaron
+POST real, modal de éxito y listado/FAB. Flecha y Atrás regresan a Actividades del
 mismo perfil.

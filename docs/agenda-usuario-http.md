@@ -29,7 +29,8 @@ La ejecución se une únicamente para esa fecha mediante LEFT JOIN con la fecha
 en ON: ausencia = PENDIENTE, ejecución actual = EN_PROGRESO o COMPLETADA.
 Una ejecución histórica nunca completa el día actual ni excluye la definición.
 La API es de lectura: no crea ejecuciones ni progreso, ni modifica la consulta
-del cuidador. Los futuros comandos de ejecución deberán respetar esta misma zona.
+del cuidador. Los comandos de [ejecución actuales](ejecucion-usuario-http.md)
+respetan esta misma zona.
 
 Se mantienen los errores E3: 401 VINCULACION_NO_VALIDA para credencial revocada,
 dispositivo desvinculado o perfil no disponible; 403 para un rol pendiente;
@@ -119,7 +120,7 @@ es opt-in con `DIAFACIL_TEST_MYSQL_*`, exclusivamente en `diafacil_test_*` exist
 sin DDL: comprueba historial, ausencia de ejecución, orden y filtros con rollback
 de todas sus fixtures. No ejecutarlo sobre la BD de desarrollo.
 
-Validación actual: Java 21 y JUnit Platform aislado, 272 pruebas correctas
+Validación histórica del incremento de agenda: Java 21 y JUnit Platform aislado, 272 pruebas correctas
 y 8 pruebas MySQL omitidas por falta de configuración de pruebas. Se excluye
 `BackendApplicationTests` (contexto/datasource completo). Se reutilizan las
 dependencias locales porque el Maven Wrapper tiene el fallo PowerShell ya

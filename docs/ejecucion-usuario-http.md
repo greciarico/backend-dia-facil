@@ -80,7 +80,21 @@ Si no puede consultar, bloquea nuevas escrituras hasta una recuperación GET exp
 Si la lectura confirma que no se aplicó, mantiene el estado real y permite una nueva
 acción explícita. El cierre confirmado muestra éxito solo en memoria, sin demoras.
 
-## Validación
+## Consulta de una actividad completada
+
+El detalle frontend de una actividad COMPLETADA abre la misma ruta de guía sin
+POST de inicio. GET ya entrega todos los pasos; no requiere ampliar contratos ni
+modelo. El estado COMPLETADA activa consulta con navegación libre de los pasos,
+sin modificar los flags alcanzado/completado recibidos ni ejecutar comandos.
+Siguiente solo cambia posición local; último: Volver a la actividad. No registra
+otro cumplimiento, no cambia la bandera inicial ni muestra otra celebración.
+Esto se aplica también tras DIRECTA o GUIADA anticipada con progreso parcial.
+
+La celebración solo sigue a una finalización confirmada. No muestra fecha,
+destaca el nombre real del perfil y reutiliza user-happy.png con entrada breve
+respetando movimiento reducido. Detalle visual en [Mi agenda](../../frontend_dia_facil/docs/mi-agenda.md).
+
+## Validación registrada
 
 `EjecucionUsuarioServiceTest`, `EjecucionUsuarioControllerTest` y consultas HQL
 cubren reglas, permisos, fechas, progreso y DTO. `EjecucionUsuarioMySqlTest` es

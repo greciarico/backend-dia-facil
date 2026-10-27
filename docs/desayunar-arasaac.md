@@ -60,7 +60,8 @@ GET de plantilla lee BD y entrega sus cinco pictogramas con URL calculada:
 `https://static.arasaac.org/pictograms/{id}/{id}_300.png`.
 Copiar/usar pasos sugeridos carga esas referencias en memoria; no busca pictogramas
 individuales. Agregar/Editar sigue utilizando búsqueda dinámica y selección manual.
-Crear actividad continúa deshabilitado, sin POST. No cambia atribución/licencia.
+La [creación real posterior](actividades-http.md) persiste esos pasos como copias
+independientes. La fase del backfill no cambió atribución/licencia.
 La herramienta de revisión __DEV__ y sus pruebas exclusivas se eliminaron.
 
 ## Validación y límites

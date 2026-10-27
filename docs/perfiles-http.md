@@ -61,8 +61,9 @@ código de vinculación no son argumentos del comando, aunque se envíen en JSON
 ```
 
 Se conserva el contrato de creación sin Location. No se devuelven código interno,
-configuración ni entidad JPA. El código obligatorio se genera con SecureRandom,
-formato DF- y seis dígitos, estable y único; no se muestra ni implementa vinculación.
+configuración ni entidad JPA. El código se genera con SecureRandom, DF- y 16
+símbolos (80 bits), estable y UNIQUE. No se expone en este DTO: consulta/renovación
+usan [E1](vinculacion-http.md) y la vinculación real usa [E3](dispositivos-e3.md).
 
 La transacción REQUIRES_NEW/READ_COMMITTED bloquea la fila del cuidador mediante
 PESSIMISTIC_WRITE y refresca su estado antes de contar ACTIVO. Con cuatro rechaza

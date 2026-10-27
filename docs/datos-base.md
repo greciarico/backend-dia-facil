@@ -38,7 +38,8 @@ El JSON se extrajo de los datos existentes, conservando:
 - Desayunar, su icono bread, sus tres palabras clave y cinco pasos ordenados.
 
 Una BD nueva recibe 97 filas base. Sus IDs son generados por BD, no constantes.
-Las referencias del JSON usan código de icono o nombre de pictograma/plantilla.
+Las referencias del JSON usan código de icono, `arasaac:ID` para pictogramas
+externos y nombre estable de plantilla; nombre de pictograma solo en compatibilidad legacy.
 Cambiar un nombre usado como identidad no es una operación automática de renombrado.
 
 Para ampliar los datos, editar el JSON; si se añade un icono, agregar su PNG y
@@ -49,9 +50,11 @@ Los tests frontend consultan el JSON para el catálogo vigente y mantienen prueb
 separadas de integridad de esas referencias históricas.
 
 Los scripts audit/backfill/cleanup de la separación anterior permanecen históricos.
-No se invocan por el runner. No se descarga ARASAAC ni se implementa selección/copia
-de plantillas. Las URLs de pictogramas son las referencias ya existentes; no se
-reemplazan imágenes personalizadas por esas rutas si la BD tiene otra URL/fuente.
+No se invocan por el runner. El inicializador no descarga imágenes ARASAAC ni
+realiza búsquedas. Selección/copia de plantillas y resolución de pictogramas al
+crear actividades pertenecen a sus [servicios actuales](actividades-http.md).
+ARASAAC se identifica por ID y su URL se deriva en DTO; las rutas legacy no se
+convierten automáticamente ni sustituyen selecciones existentes.
 
 ## Política de sincronización
 
@@ -65,7 +68,8 @@ directamente el sincronizador, antes de su primera operación persistente.
 | Falta icono/pictograma/plantilla compatible | Insertar por su clave natural |
 | Registro coincide | Conservar ID y atributos |
 | Código de icono con otra etiqueta | Conservar, advertir y permitir relaciones por código |
-| Pictograma con URL o fuente diferente | Conservar y omitir keywords/nuevas dependencias incompatibles |
+| Pictograma con ID/fuente incompatible, o URL distinta si es legacy | Conservar y omitir keywords/nuevas dependencias incompatibles |
+| Pictograma ARASAAC con etiqueta diferente y mismo ID/fuente | Conservar y advertir; permitir dependencias/keywords por identidad externa |
 | Keyword faltante de recurso compatible | Insertar; conservar las adicionales |
 | Plantilla con icono distinto, incluso null | Conservar y omitir pasos/keywords de ese grupo |
 | Pasos existentes coinciden y faltan posiciones | Insertar solo los faltantes |

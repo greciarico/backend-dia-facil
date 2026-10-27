@@ -2,7 +2,7 @@
 
 Dominio separado de la sesión del cuidador. `Dispositivo` conserva pertenencia, estado ACTIVO/DESVINCULADO y fechas. `credencial_dispositivo` contiene únicamente el hash SHA-256 de un secreto aleatorio de 256 bits (`du_…`), una FK única al dispositivo y la fecha límite de preparación. No almacena el código del perfil ni el secreto en claro.
 
-La credencial pendiente dura 10 minutos según el reloj de BD. Tras vincularse no caduca periódicamente: deja de autorizar al desactivar el perfil o desvincular el dispositivo. Cada petición autentica esos estados. No se utilizan OTP, sesiones Bearer del cuidador ni IDs internos como credencial. Las APIs del usuario derivan el perfil de `AccesoDispositivoService.Identidad`, autorizan expresamente ROLE_USUARIO y mantienen la comprobación de estado. Ya está disponible [GET /api/usuario/agenda](agenda-usuario-http.md); el resto del espacio privado continúa cerrado.
+La credencial pendiente dura 10 minutos según el reloj de BD. Tras vincularse no caduca periódicamente: deja de autorizar al desactivar el perfil o desvincular el dispositivo. Cada petición autentica esos estados. No se utilizan OTP, sesiones Bearer del cuidador ni IDs internos como credencial. Las APIs del usuario derivan el perfil de `AccesoDispositivoService.Identidad`, autorizan expresamente ROLE_USUARIO y mantienen la comprobación de estado. Están disponibles [agenda/detalle](agenda-usuario-http.md) y [ejecución diaria](ejecucion-usuario-http.md); las demás rutas no autorizadas se deniegan.
 
 ## Contrato HTTP
 
@@ -36,7 +36,16 @@ Los POST tienen límite compartido por dirección remota: 10/minuto y 60/hora, m
 
 ## Activación y transición local segura
 
-**No se ha ejecutado esta transición sobre la BD local.** La configuración general mantiene E3 desactivado (`diafacil.dispositivos.enabled=false`), mientras que la plantilla y la copia local incluyen explícitamente `true`. El perfil `local` debe estar activo y el backend debe reiniciarse después de actualizar esa propiedad. La guarda de arranque sigue exigiendo esquema válido y ausencia de códigos legacy antes de admitir vinculaciones. E1 frontend de esta entrega también espera el formato vigente; completar la auditoría y, si corresponde, la transición antes de probar ambos flujos.
+La transición siguiente es un procedimiento para una **BD existente que lo necesite**,
+no una tarea de cada arranque. Durante su implementación no se ejecutó sobre la
+BD local desde el entorno del agente; posteriormente el usuario confirmó E3
+funcionando físicamente. No repetirla por seguir una nota histórica, ni afirmar
+una nueva inspección MySQL desde esta documentación.
+
+La configuración general mantiene E3 desactivado (`diafacil.dispositivos.enabled=false`),
+mientras que la plantilla local incluye `true`. El perfil `local` debe estar activo.
+La guarda exige esquema válido y ausencia de códigos legacy. E1 frontend también
+espera el formato vigente. En otra BD, auditar primero y aplicar solo si corresponde.
 
 1. Hacer copia de seguridad y detener otras instancias/escrituras. No ejecutar el SQL v7 completo en una BD existente. Para BD nueva, Hibernate crea el modelo; para existente, `ddl-auto=update` puede crear la tabla nueva compatible. Alternativamente revisar/aplicar **solo** [el DDL aditivo](sql/e3-credencial-dispositivo.sql). Si la tabla ya existe, inspeccionarla; el script no la reemplaza ni corrige automáticamente.
 2. Con el backend detenido, ejecutar su clase principal desde el IDE usando la conexión local habitual y estos **Program arguments** (no VM options):
@@ -66,7 +75,12 @@ Una transición puede permanecer viva por recursos del contexto no-web; se puede
 
 La transición es técnica y **no escribe `fecha_renovacion_codigo`**: NULL sigue NULL y cualquier fecha histórica se conserva. No representa una solicitud del cuidador ni inicia un cooldown nuevo. La renovación normal de E1 sigue estableciendo su fecha real y aplicando 60 segundos, sin cambios en su política.
 
-El usuario confirmó en MySQL seis perfiles activos: cinco legacy y uno vigente (Jhonita, renovado desde E1). Para esos seis se esperan cinco cambios de código y conservación exacta del código y fecha de Jhonita. La auditoría incluye toda la tabla, también perfiles inactivos, porque la guarda E3 usa ese mismo alcance; si el total es mayor que seis, revisar los registros adicionales antes de aplicar. No se fija ni se fuerza el número cinco dentro del algoritmo. Con exactamente esos seis registros, la salida previa debe indicar total=6, actuales=1, legacy=5; la posterior, total=6, actuales=6, legacy=0, cambiados=5, sin duplicados ni formatos inesperados.
+Antes de la transición el usuario confirmó seis perfiles activos: cinco legacy y
+uno vigente. Esas cantidades fueron una fotografía histórica, no una condición
+actual ni un dato que deba fijarse en código. La auditoría incluye toda la tabla,
+también inactivos, como la guarda E3. Para aquella fotografía se esperaban cinco
+cambios y conservación exacta del código/fecha ya vigentes. En otra BD/reanudación
+usar las cantidades reales; no forzar total=6 ni cambiados=5.
 
 El mensaje de comprobación de códigos superada confirma solo ese requisito. El arranque normal de E3 continúa verificando por separado tabla, UNIQUE y FK de credenciales. No se desactiva ni se relaja su guarda. Este ajuste de código y documentación **no ha ejecutado la migración sobre la BD local**.
 
@@ -74,7 +88,8 @@ El mensaje de comprobación de códigos superada confirma solo ese requisito. El
 
 Pruebas de servicio, cadena Security/MockMvc, límites, esquema y comando de transición no necesitan BD local. `DispositivoMySqlTest` es opt-in con `DIAFACIL_TEST_MYSQL_URL`, `DIAFACIL_TEST_MYSQL_USER`, `DIAFACIL_TEST_MYSQL_PASSWORD`: exige una BD de pruebas existente `diafacil_test_*`, sin DDL. Comprueba transacción/rollback, concurrencia con el mismo secreto, múltiples dispositivos, conteo, renovación y revocación aislada. Nunca apuntarlo a la BD de desarrollo. La prueba limpia exclusivamente sus fixtures.
 
-E2 y la ejecución de actividades siguen fuera del alcance. La pantalla autenticada ya consulta la agenda real; Salir del perfil conserva el dispositivo ACTIVO y pausa solo esta instalación.
+E2 sigue pendiente; ejecución de actividades ya está implementada en su módulo.
+Salir del perfil conserva el dispositivo ACTIVO y pausa solo esta instalación.
 
 ### Resultado histórico de validación de E3, previo a Mi agenda
 

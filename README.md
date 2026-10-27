@@ -1,5 +1,24 @@
 # Backend DiaFacil
 
+Entrada de continuidad: [AGENTS raíz](../AGENTS.md) →
+[estado actual del proyecto](../documentacion-dia-facil/ESTADO_ACTUAL_PROYECTO.md).
+Este README conserva la preparación del entorno; los contratos de módulo son
+la referencia HTTP. No confundir resultados históricos de pruebas con pruebas
+ejecutadas hoy ni tablas modeladas con funcionalidades disponibles.
+
+## Módulos actuales
+
+- [Autenticación y sesiones del cuidador](docs/auth-http.md).
+- [Perfiles](docs/perfiles-http.md) y [crear/listar actividades](docs/actividades-http.md).
+- [Iconos](docs/iconos-actividad-http.md), [plantillas](docs/plantillas-actividad-http.md)
+  y [pictogramas ARASAAC](docs/pictogramas-arasaac.md).
+- [Vinculación E1](docs/vinculacion-http.md) y [credencial de dispositivo E3](docs/dispositivos-e3.md).
+- [Agenda/detalle Usuario](docs/agenda-usuario-http.md) y [ejecución diaria](docs/ejecucion-usuario-http.md).
+- [Datos base](docs/datos-base.md) y [modelo JPA](docs/persistence.md).
+
+Apoyo, notificaciones/push, edición de accesibilidad y gestión E2 todavía no tienen
+casos de uso/endpoints de producto. No crearlos como parte de una preparación local.
+
 El contrato de los endpoints de autenticacion y registro, sus DTOs y
 respuestas HTTP esta documentado en [docs/auth-http.md](docs/auth-http.md).
 Para validar esta capa sin JDBC ni SMTP real:
@@ -82,7 +101,7 @@ esos valores en los entornos locales y verificar posteriormente el charset y
 la collation de la base y las tablas. Esta configuracion no modifica MySQL.
 
 En `local`, `spring.jpa.hibernate.ddl-auto=update` permite crear o actualizar
-tablas a partir de las 21 entidades implementadas. Sobre una base vacia,
+tablas a partir de las 22 entidades implementadas. Sobre una base vacia,
 Hibernate genera el esquema sin ejecutar manualmente el SQL de referencia.
 Las tablas fijan utf8mb4/utf8mb4_unicode_ci y usan InnoDB; los defaults de la
 base se deben comprobar por separado.
@@ -111,7 +130,7 @@ abordara posteriormente mediante Flyway y `ddl-auto=validate`.
 
 ## Modelo de persistencia
 
-Consultar [el modelo JPA](docs/persistence.md) para el inventario de las 21
+Consultar [el modelo JPA](docs/persistence.md) para el inventario de las 22
 tablas, relaciones, restricciones, diferencias de DDL y reglas pendientes.
 No hay relaciones bidireccionales ni cascadas JPA. Se conservan las acciones
 SQL de borrado y los dos CHECK mediante anotaciones Jakarta/Hibernate.
@@ -121,9 +140,10 @@ La [guía de transición](docs/iconos-actividad.md) describe expansión Hibernat
 seed manual de 52 códigos, traslado y limpieza con autorización separada.
 No se ejecutan estos scripts al iniciar la aplicación.
 
-El limite acordado es cuatro perfiles activos por cuidador y corresponde a
-un futuro servicio con control de concurrencia. Las entidades no implementan
-autenticacion, OTP, vinculacion, carga inicial ni otras operaciones funcionales.
+El límite de cuatro perfiles activos se aplica en el servicio de creación bajo
+bloqueo/transacción; el trigger del SQL es una barrera adicional, no lo crea JPA.
+OTP, sesiones, vinculación, datos base y ejecución ya tienen servicios. Una entidad
+por sí sola no autoriza una operación ni implica que un módulo futuro esté listo.
 
 ## Verificacion
 
@@ -135,18 +155,14 @@ Para probar el mapeo sin MySQL y empaquetar sin ejecutar contextLoads:
 .\mvnw.cmd -B -ntp -Dtest=PersistenceModelTest package
 ```
 
-Antes de inicializar Git, revisar las reglas del `.gitignore` raiz y de los
-subdirectorios: solo la copia local debe quedar excluida. `git check-ignore`
-requiere un repositorio, incluso con `--no-index`, por lo que esa comprobacion
-queda pendiente hasta que se inicialice Git en una tarea posterior.
-
-Cuando exista el repositorio, ejecutar desde la raiz de DiaFacil:
+Backend y frontend ya son repositorios Git independientes; la raíz compartida
+no lo es. Comprobar exclusiones desde este repositorio:
 
 ```powershell
-git check-ignore --no-index backend_dia_facil/application-local.properties backend_dia_facil/application-local.example.properties backend_dia_facil/src/main/resources/application.properties
+git check-ignore --no-index application-local.properties application-local.example.properties src/main/resources/application.properties
 ```
 
-El resultado esperado es solo `backend_dia_facil/application-local.properties`.
+El resultado esperado es solo `application-local.properties`.
 Revisar tambien las reglas existentes en los subdirectorios; no ejecutar
 `git init`, commits, push ni configurar remotos como parte de esta tarea.
 
@@ -154,17 +170,22 @@ Despues de completar manualmente las credenciales:
 
 1. Arrancar contra una instancia desechable donde `diafacil` no exista.
 2. Comprobar creacion de la base, conexion y carga del contexto.
-3. Ejecutar las pruebas con el mismo perfil:
+3. Ejecutar metadatos/pruebas aisladas sin activar la BD de trabajo:
 
    ```powershell
-   $env:SPRING_PROFILES_ACTIVE = "local"
-   .\mvnw.cmd test
+   .\mvnw.cmd '-Dtest=*Test,!BackendApplicationTests' test
    ```
 
 4. Comprobar fallos ante MySQL detenido, credenciales invalidas o permisos
    insuficientes, sin divulgar credenciales en los resultados.
 
-La prueba `contextLoads()` necesita MySQL y credenciales validas; por si sola
+No usar el perfil local/BD personal para la suite. Las pruebas MySQL opt-in
+requieren sus variables y bases exclusivas `diafacil_test_*`; algunas suites
+de transiciones crean/eliminan objetos y requieren bases vacías específicas.
+Consultar cada guía/test antes de habilitarlas. Las pruebas no configuradas se
+omiten explícitamente, no se consideran aprobadas.
+
+La prueba `contextLoads()` necesita un datasource de pruebas apropiado; por si sola
 no comprueba todas las restricciones. Spring Security esta incluido y un HTTP 401 no
 implica por si mismo un fallo de conexion a MySQL.
 Las pruebas de metadatos generan `target/jpa-schema.sql` sin ejecutar SQL ni
@@ -284,3 +305,20 @@ autoconfiguracion JPA o SMTP del resto de la aplicacion.
 acotados, claves ficticias, repositories y envio simulados y un gestor sin
 JDBC. Comprueba el proxy, commit/rollback, envio posterior al commit y fallos
 de configuracion. No lee secretos de la copia privada ni envia correos reales.
+
+## Evidencia y traslado de entorno
+
+La última validación backend registrada fue Java 21/JUnit Platform aislado:
+284 pruebas correctas y 9 MySQL omitidas. BackendApplicationTests quedó fuera
+por requerir contexto/datasource completo. Es un resultado del incremento de
+ejecución, no una nueva ejecución de esta consolidación documental.
+
+En aquel entorno el Wrapper/caché Maven presentó fallos y se usaron dependencias
+locales en target. Un nuevo equipo debe descargar/resolver dependencias con Maven;
+no depende de runners o JARs ignorados para entender/ejecutar el proyecto.
+Las suites MySQL y validación física completa permanecen explícitamente pendientes.
+
+Conservar también AGENTS raíz, documentacion-dia-facil y design junto a ambos
+repositorios. No clonar solo backend suponiendo que incluye recursos hermanos.
+No trasladar/publicar application-local.properties, secretos, tokens o contraseñas
+como documentación; preparar una configuración privada en el equipo de destino.

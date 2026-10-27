@@ -2,11 +2,13 @@
 
 ## Alcance
 
-21 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
+22 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
 `dia_facil.backend.persistence.enums`. Hibernate 7.4.5.Final / Jakarta Persistence 3.2.
 El SQL v7 sigue siendo la referencia, ahora ampliada con `cuidador.avatar_id`.
-La ampliación se entrega también en docs/sql/add-cuidador-avatar.sql; no se ha
-ejecutado contra una base real. Los servicios y endpoints de autenticación y
+La ampliación se entrega también en docs/sql/add-cuidador-avatar.sql. Las notas
+de transición describen procedimientos, no una nueva inspección de la BD local.
+El [estado central](../../documentacion-dia-facil/ESTADO_ACTUAL_PROYECTO.md) distingue
+lo reportado físicamente por el usuario de las pruebas aisladas. Los endpoints de autenticación y
 registro se documentan en auth-http.md. No se habilita Flyway en este incremento.
 
 Sesiones de cuidador: dos tablas adicionales en docs/sql/add-cuidador-sessions.sql.
@@ -23,14 +25,16 @@ una promesa de que cada relacion produzca siempre un proxy o cero consultas.
 Las entidades tienen acceso por campos, constructor protegido sin argumentos
 y getters/setters de Lombok. Los identificadores y timestamps generados por la
 base no tienen setter. No se genera equals/hashCode/toString sobre asociaciones.
-Los constructores de uso del futuro servicio se definiran con ese servicio;
-esta etapa no crea factories ni operaciones funcionales.
+Las factories actuales construyen cuentas, perfiles/configuración, actividades,
+pasos, datos base, dispositivos, ejecuciones y progreso. Las reglas funcionales
+residen en sus servicios, no en el mero mapeo JPA.
 
 ## Columnas
 
 `?` indica nullable. Las demas columnas son obligatorias.
-Las FK estan en la siguiente tabla; todas son INT y se representan mediante
-asociaciones. Todos los IDs son Integer. Las longitudes String se conservan.
+Las FK se representan mediante asociaciones. IDs del dominio original son Integer;
+sesiones, generaciones de credenciales y CredencialDispositivo usan Long/BIGINT
+para sus PK. Las longitudes String se conservan.
 
 | Tabla / entidad | PK | Campos restantes sin FK |
 |---|---|---|
@@ -53,6 +57,9 @@ asociaciones. Todos los IDs son Integer. Las longitudes String se conservan.
 | `solicitud_ayuda` → `SolicitudAyuda` | `id_solicitud_ayuda` (IDENTITY) | `fecha_solicitud`: LocalDateTime; `estado`: EstadoSolicitudAyuda; `fecha_atencion`: LocalDateTime? |
 | `notificacion_cuidador` → `NotificacionCuidador` | `id_notificacion_cuidador` (IDENTITY) | `tipo`: TipoNotificacion; `titulo`: String [VARCHAR(120)]; `mensaje`: String [VARCHAR(255)]; `fecha_creacion`: LocalDateTime; `leida`: Boolean |
 | `token_push` → `TokenPush` | `id_token_push` (IDENTITY) | `expo_token`: String [VARCHAR(255)]; `plataforma`: Plataforma?; `fecha_actualizacion`: LocalDateTime |
+| `sesion_cuidador` → `SesionCuidador` | `id_sesion` (Long, IDENTITY) | `creada_en`, `inactividad_hasta`, `vence_en`, `revocada_en`?; DATETIME(6), UTC |
+| `credencial_sesion_cuidador` → `CredencialSesionCuidador` | `id_credencial` (Long, IDENTITY) | `generacion`: Integer; `access_hash`, `refresh_hash`: BINARY(32); `access_hasta`, `consumida_en`?; DATETIME(6), UTC |
+| `credencial_dispositivo` → `CredencialDispositivo` | `id_credencial_dispositivo` (Long, IDENTITY) | `token_hash`: BINARY(32); `preparacion_hasta`: LocalDateTime? DATETIME(6) |
 
 ## Relaciones, unicidad e indices
 
@@ -74,7 +81,7 @@ No se habilita cache de segundo nivel en esta etapa.
 | `codigo_acceso` | Sin FK | Sin UNIQUE adicional | `idx_codigo_acceso_email(email,fecha_creacion)` |
 | `perfil_usuario` | `id_cuidador` → `cuidador` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_perfil_codigo(codigo_vinculacion)`; `uq_perfil_cuidador(id_perfil_usuario,id_cuidador)` | `idx_perfil_cuidador_nombre(id_cuidador,nombre)` |
 | `configuracion_perfil` | `id_perfil_usuario` → `perfil_usuario` (obligatoria; OneToOne; ON DELETE CASCADE) | Sin UNIQUE adicional | Sin indice explicito adicional |
-| `pictograma` | Sin FK | `uq_pictograma_nombre(nombre)` | Sin indice explicito adicional |
+| `pictograma` | Sin FK | `uq_pictograma_arasaac(id_arasaac)`; nombre no UNIQUE | Sin indice explicito adicional |
 | `palabra_clave_pictograma` | `id_pictograma` → `pictograma` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_palabra_pictograma(id_pictograma,palabra)` | `idx_palabra_pictograma(palabra)` |
 | `icono_actividad` | Sin FK | `uq_icono_actividad_codigo(codigo)` | Sin índice explícito adicional |
 | `palabra_clave_icono_actividad` | `id_icono_actividad` → `icono_actividad` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_palabra_icono_actividad(id_icono_actividad,palabra)` | `idx_palabra_icono_actividad(palabra)` |
@@ -90,13 +97,19 @@ No se habilita cache de segundo nivel en esta etapa.
 | `notificacion_cuidador` | `id_perfil_usuario,id_cuidador` → `perfil_usuario` (obligatoria; ManyToOne; ON DELETE CASCADE); `id_ejecucion_actividad` → `ejecucion_actividad` (opcional; ManyToOne; ON DELETE SET NULL); `id_solicitud_ayuda` → `solicitud_ayuda` (opcional; ManyToOne; ON DELETE SET NULL) | Sin UNIQUE adicional | `idx_notif_cuidador_fecha(id_cuidador,fecha_creacion)`; `idx_notif_cuidador_leida(id_cuidador,leida)` |
 | `token_push` | `id_cuidador` → `cuidador` (obligatoria; ManyToOne; ON DELETE CASCADE) | `uq_token_push(expo_token)` | `idx_token_cuidador(id_cuidador)` |
 
+Tablas de seguridad adicionales: SesionCuidador referencia Cuidador, nunca Dispositivo.
+CredencialSesionCuidador referencia su familia y tiene UNIQUE access_hash,
+refresh_hash y (id_sesion,generacion). CredencialDispositivo tiene FK opcional al
+Dispositivo (pendiente hasta vincular), UNIQUE token_hash e id_dispositivo.
+Los detalles, índices y vencimientos están en [auth](auth-http.md) y [E3](dispositivos-e3.md).
+
 El orden de `uq_perfil_cuidador` en el codigo es
 `(id_cuidador,id_perfil_usuario)`, como se explica a continuacion; la tabla
 anterior conserva el orden original de la referencia SQL.
 
 La configuracion comparte el ID del perfil mediante `@MapsId`; no utiliza
 autoincremento. Impide duplicados, pero no obliga a que cada perfil tenga una
-fila de configuracion. La futura creacion del perfil debe resolver esa regla.
+fila de configuracion. El servicio de creación actual inserta ambas en la misma transacción.
 
 Las notificaciones usan una sola asociacion al perfil con FK compuesta. Esa
 asociacion escribe tanto `id_perfil_usuario` como `id_cuidador`, evitando
@@ -115,19 +128,24 @@ los otros booleanos false; intentos 0. Los enums se almacenan por nombre con
 se inicializan en Java; un null explicito no se reemplaza silenciosamente.
 Los campos obligatorios sin default requieren un valor antes de persistir.
 
-Todos los DATETIME se representan como LocalDateTime (sin zona horaria);
+Los DATETIME se representan como LocalDateTime (sin zona horaria);
 TIME como LocalTime; DATE como LocalDate. Se solicita precision temporal de
-cero fracciones mediante `@Column(secondPrecision = 0)`.
+cero fracciones mediante `@Column(secondPrecision = 0)` en el dominio original.
+Sesiones y credenciales posteriores usan DATETIME(6); las sesiones representan
+UTC explícito. Agenda/ejecución usan el reloj autoritativo de la zona America/Lima
+por defecto, sin convertir LocalTime a UTC ni usar el reloj del teléfono.
 
 MySQL genera los timestamps con DEFAULT CURRENT_TIMESTAMP:
 fecha_creacion, fecha_vinculacion, fecha_inicio y fecha_solicitud.
 Hibernate recupera esos valores con `@Generated(event = INSERT)`.
 fecha_actualizacion de configuracion y token conserva tambien
 ON UPDATE CURRENT_TIMESTAMP; Hibernate recupera su valor en INSERT y UPDATE.
-No se usan callbacks, relojes Java ni triggers.
+No se usan callbacks para esos timestamps generados. Los servicios sí utilizan
+relojes para políticas/fin de ejecución; existe además el trigger del SQL para
+perfiles, que Hibernate no instala automáticamente.
 
 Las fechas opcionales y fecha_expiracion son valores normales que debera
-proporcionar la futura capa funcional. No se actualizan por cambios de estado
+proporcionar la capa funcional. No se actualizan por cambios de estado
 en las entidades.
 
 ## Fidelidad y diferencias documentadas
@@ -175,24 +193,28 @@ Limites del modelo:
   preexistentes. La equivalencia se acepta sobre una base vacia.
   La prueba real de MySQL sigue pendiente.
 
-## Reglas funcionales pendientes
+## Reglas funcionales y módulos pendientes
 
-El limite acordado es **cuatro perfiles activos por cuidador**. No lo implementa
-una entidad ni un CHECK entre filas. Un futuro servicio debera contemplar altas,
-reactivaciones y cambios de cuidador con control transaccional de concurrencia.
-El trigger SQL solo revisa INSERT y no distingue un NEW inactivo: no se copia.
+El límite es **cuatro perfiles activos por cuidador**. Creación ya lo aplica en
+servicio bajo bloqueo del cuidador, conteo y transacción. No es un CHECK entre
+filas. El trigger SQL solo revisa INSERT y no distingue un NEW inactivo; no se
+copia como trigger JPA. Reactivar/cambiar propietario no está implementado y
+deberá respetar la misma integridad, no solo el trigger.
 
 EjecucionActividad no duplica el perfil: se obtiene a traves de Actividad.
 PENDIENTE se deriva de ausencia de ejecucion; NECESITA_AYUDA se deriva de las
 solicitudes. El enum persistido de ejecucion solo tiene EN_PROGRESO/COMPLETADA.
 
-La coherencia de las combinaciones de ayuda y de actividad/ejecucion/paso,
-la creacion de configuracion, la primera guia, OTP, vinculacion, copia de
-plantillas, notificaciones y borrado logico requieren servicios futuros.
+Crear configuración, OTP/sesiones, vinculación, primera guía y copia independiente
+de pasos al crear una actividad ya tienen servicios. Ver [actividades](actividades-http.md)
+y [ejecución](ejecucion-usuario-http.md). Ayuda/notificaciones y comandos de
+edición/borrado lógico siguen sin implementación funcional. La coherencia futura
+de combinaciones de ayuda con actividad/ejecución/paso debe validarse en servicio.
 Los estados y el campo activo no interceptan automaticamente un remove().
 El catálogo funcional y Desayunar se cargan desde datos-base.json al arrancar,
 con política aditiva y conservación de diferencias. Ver [datos base](datos-base.md).
-No se copian plantillas a actividades reales ni se actualizan copias existentes.
+El inicializador no copia plantillas a actividades reales ni actualiza copias.
+El formulario sí copia al borrador, y el POST crea definición/pasos propios.
 
 ## Pruebas sin MySQL ni Docker
 
@@ -223,11 +245,12 @@ pruebas de metadatos y sin esa prueba:
 
 ## Comprobacion posterior en MySQL desechable
 
-No ejecutada en esta tarea. Usar una instancia aislada, con base diafacil vacia
-y credenciales configuradas privadamente; no apuntar a la base de trabajo.
+Validación de integración pendiente, no ejecutada durante la consolidación.
+Usar bases aisladas `diafacil_test_*` y credenciales privadas; nunca la BD de trabajo.
 
-1. Arrancar el backend con perfil local. Hibernate debe crear 21 tablas,
-   sin triggers, datos iniciales ni flyway_schema_history.
+1. Sobre el esquema desechable, comprobar las 22 tablas y sus restricciones.
+   Hibernate no instala triggers ni Flyway. Los datos base sí se cargan por su
+   ApplicationRunner salvo deshabilitación explícita. No confundirlos con fixtures.
 2. Inspeccionar SHOW CREATE TABLE e information_schema para verificar tipos,
    nulabilidad, enums, defaults, UNIQUE, indices, CHECK y acciones de FK.
    Verificar especialmente el respaldo de la FK compuesta.
@@ -244,6 +267,6 @@ y credenciales configuradas privadamente; no apuntar a la base de trabajo.
 6. Reiniciar y comprobar conservacion de fixtures. Repetir con otra instancia
    vacia para comparar los esquemas.
 7. Los fixtures de prueba son datos temporales, no una carga inicial.
-   No comprobar el limite de cuatro perfiles como restriccion de esta capa:
-   su servicio y trigger estan fuera de alcance.
+   El límite de cuatro no es una restricción del metamodelo: la suite de creación
+   de perfiles sí prueba el servicio y su concurrencia. Ver [perfiles](perfiles-http.md).
 

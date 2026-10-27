@@ -1,5 +1,7 @@
 # Iconos propios de actividades y pictogramas de pasos
 
+> **Alcance hist?rico.** Informe hist?rico de separaci?n de cat?logos. El modelo sigue vigente, pero sugerencias, ARASAAC, formulario y POST ya funcionan. Los scripts de transici?n NO se ejecutan al arrancar; ver [datos base actuales](datos-base.md) y [creaci?n](actividades-http.md). Los resultados de pruebas y pendientes f?sicos inferiores pertenecen a ese incremento, no a una nueva validaci?n.
+
 Actualización posterior: [inicialización de datos base](datos-base.md) utiliza
 datos-base.json automáticamente. La secuencia de esta guía es histórica para la
 separación de catálogos; audit/backfill/cleanup no se ejecutan al arrancar. El seed

@@ -22,7 +22,7 @@ Cuenta únicamente dispositivos ACTIVO mediante el índice existente perfil/esta
 `POST /api/perfiles/{idPerfilUsuario}/vinculacion/renovar-codigo`
 
 ```json
-{ "codigoActual": "DF-482157" }
+{ "codigoActual": "DF-7KQ9W6H2M8V3X5RA" }
 ```
 
 Devuelve 200 con la misma estructura de consulta y el nuevo código. `codigoActual` es una precondición de concurrencia, no una identidad ni autoridad de acceso. Se compara exactamente después de bloquear y releer el perfil ACTIVO del propietario. Si ya cambió: **409 `CODIGO_VINCULACION_CAMBIADO`**, sin otra renovación. Body vacío/inválido: 400 `SOLICITUD_INVALIDA`. Colisiones aleatorias agotadas: 503 `SERVICIO_NO_DISPONIBLE`.
@@ -43,7 +43,10 @@ GET y POST devuelven `renovacionEnSegundos`, calculado usando hora de BD y redon
 
 Los perfiles nuevos y las renovaciones usan `DF-` + 16 símbolos aleatorios de `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (32 símbolos, 80 bits). Cada posición utiliza SecureRandom.nextInt(32). Longitud total 19, compatible con VARCHAR(20) y UNIQUE `uq_perfil_codigo` actuales. Sin migración de esquema.
 
-Los códigos legacy `DF-` + seis dígitos se conservan hasta renovación explícita. **Antes de publicar E3 debe resolverse la existencia de estos códigos débiles**, mediante una transición aprobada; E1 no los migra ni los renueva al consultar. Las muestras antiguas del SQL siguen siendo ejemplos legacy compatibles.
+Históricamente E1 conservó códigos `DF-` + seis dígitos hasta renovación explícita.
+La entrega E3 exige su transición controlada antes de activarse; no mantener
+compatibilidad legacy en el flujo público. E1 no migra ni renueva durante GET.
+Ver el procedimiento de auditoría/transición de E3 para una BD histórica.
 
 El QR se genera localmente y codifica exactamente la misma cadena visible/copiable. Sin IDs, correo, datos personales, access/refresh tokens ni URL. No se almacena una imagen QR. El código vive únicamente en memoria del frontend y portapapeles cuando el cuidador pulsa Copiar; no se registra ni se persiste en SecureStore ni en parámetros de navegación.
 
@@ -60,8 +63,9 @@ La cantidad de dispositivos es real; el acceso a su gestión permanece deshabili
 ## Fuera de E1
 
 - E2: listado y desvinculación; sin pantallas provisionales.
-- E3: validación pública, QR/código manual y credenciales independientes de dispositivo.
-- E3 deberá incorporar límites por origen y globales, errores genéricos y generación segura de credenciales de dispositivo. En la transacción de vincular deberá validar otra vez código y perfil activo bajo el mismo bloqueo de perfil que la renovación, de modo que el código anterior no permita nuevas vinculaciones una vez confirmado el cambio.
+- E3 se implementó posteriormente: [contrato y seguridad actuales](dispositivos-e3.md),
+  con límites por origen/globales, errores genéricos y credenciales independientes.
+  Valida otra vez código/perfil bajo el mismo bloqueo de perfil que la renovación.
 - No reutilizar OTP / `codigo_acceso` ni sesiones del cuidador para el acceso del dispositivo.
 
 ## Validación

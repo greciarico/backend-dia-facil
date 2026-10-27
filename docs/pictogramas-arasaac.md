@@ -79,10 +79,13 @@ en este entorno siguen utilizando respuestas simuladas.
 
 ## Licencia e imágenes
 
-Piloto no comercial confirmado. Atribución visible con enlaces: Sergio Palao,
-ARASAAC, Gobierno de Aragón, CC BY-NC-SA. No se asume versión de licencia no
-verificada ni se aplica automáticamente a todo el código. Revisar autorización
-antes de uso comercial. No hay Cloudinary ni copias propias.
+Piloto no comercial confirmado. Los créditos se retiraron de Nueva actividad
+por decisión UX; **no hay un apartado definitivo visible implementado**. Su
+ubicación y cumplimiento deben revisarse antes de distribuir, incluyendo Sergio
+Palao, ARASAAC, Gobierno de Aragón y CC BY-NC-SA según condiciones aplicables.
+No se asume una versión de licencia no verificada ni se aplica al código completo.
+Esta consolidación no realiza una revisión legal ni resuelve la atribución pendiente.
+No hay Cloudinary ni copias propias del catálogo.
 
 Expo Image usa contain y caché de disco al visualizar imágenes, sin descarga masiva.
 La caché puede ser eliminada por el sistema: no garantiza offline permanente.
