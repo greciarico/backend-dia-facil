@@ -212,3 +212,10 @@ F	credencial_dispositivo	fk_credencial_dispositivo	id_dispositivo	dispositivo	id
 U	credencial_dispositivo	uq_dispositivo_token	token_hash
 U	credencial_dispositivo	uq_credencial_dispositivo	id_dispositivo
 I	credencial_dispositivo	idx_preparacion_dispositivo	preparacion_hasta
+
+T	configuracion_cuidador	ConfiguracionCuidador	id_cuidador
+C	configuracion_cuidador	id_cuidador	INT	false	-	false	false
+C	configuracion_cuidador	tamano_texto	ENUM('PEQUENO','MEDIANO','GRANDE')	false	'MEDIANO'	false	false
+C	configuracion_cuidador	alto_contraste	TINYINT(1)	false	0	false	false
+F	configuracion_cuidador	fk_config_cuidador	id_cuidador	cuidador	id_cuidador	CASCADE
+K	configuracion_cuidador	chk_config_cuidador_contraste	alto_contraste IN (0,1)

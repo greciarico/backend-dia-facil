@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class PersistenceModelTest {
     static final List<Class<?>> ENTITIES = List.of(
         Cuidador.class,
+        dia_facil.backend.persistence.entity.ConfiguracionCuidador.class,
         CodigoAcceso.class,
         PerfilUsuario.class,
         ConfiguracionPerfil.class,
@@ -135,7 +136,7 @@ class PersistenceModelTest {
 
     @Test
     void tablesColumnsPrimaryKeysAndTypesMatchReference() {
-        assertEquals(22, tables.size());
+        assertEquals(23, tables.size());
         assertEquals(rows("T").stream().map(row -> row[1]).collect(Collectors.toSet()), tables.keySet());
         for (var row : rows("T")) {
             var table = tables.get(row[1]);
@@ -328,9 +329,9 @@ class PersistenceModelTest {
 
     @Test
     void schemaContainsOnlyDdlAndTableStorageOptions() {
-        assertEquals(22, Pattern.compile("create table ").matcher(ddl).results().count());
-        assertEquals(22, Pattern.compile("engine=innodb").matcher(ddl).results().count());
-        assertEquals(22, Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
+        assertEquals(23, Pattern.compile("create table ").matcher(ddl).results().count());
+        assertEquals(23, Pattern.compile("engine=innodb").matcher(ddl).results().count());
+        assertEquals(23, Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
         assertFalse(ddl.contains("create trigger"));
         assertFalse(ddl.contains("insert into"));
         assertEquals(0, RejectConnections.attempts.get());

@@ -2,7 +2,7 @@
 
 ## Alcance
 
-22 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
+23 entidades en `dia_facil.backend.persistence.entity` y 10 enums en
 `dia_facil.backend.persistence.enums`. Hibernate 7.4.5.Final / Jakarta Persistence 3.2.
 El SQL v7 sigue siendo la referencia, ahora ampliada con `cuidador.avatar_id`.
 La ampliación se entrega también en docs/sql/add-cuidador-avatar.sql. Las notas
@@ -39,6 +39,7 @@ para sus PK. Las longitudes String se conservan.
 | Tabla / entidad | PK | Campos restantes sin FK |
 |---|---|---|
 | `cuidador` → `Cuidador` | `id_cuidador` (IDENTITY) | `nombre`: String? [VARCHAR(100)], obligatorio para registrar; `avatarId`: String? [VARCHAR(32)]; `email`: String [VARCHAR(150)]; `estado`: EstadoCuidador; `fecha_creacion`: LocalDateTime |
+| `configuracion_cuidador` → `ConfiguracionCuidador` | `id_cuidador` compartida (@MapsId) | `tamano_texto`: TamanoTexto (MEDIANO); `alto_contraste`: Boolean (false). Sin voz ni relación con ConfiguracionPerfil |
 | `codigo_acceso` → `CodigoAcceso` | `id_codigo_acceso` (IDENTITY) | `email`: String [VARCHAR(150)]; `codigo_hash`: String [CHAR(64)]; `fecha_expiracion`: LocalDateTime; `intentos`: Integer; `usado`: Boolean; `fecha_creacion`: LocalDateTime |
 | `perfil_usuario` → `PerfilUsuario` | `id_perfil_usuario` (IDENTITY) | `nombre`: String [VARCHAR(60)]; `avatar`: String? [VARCHAR(255)]; `codigo_vinculacion`: String [VARCHAR(20)]; `fecha_renovacion_codigo`: LocalDateTime?; `estado`: EstadoPerfil; `fecha_creacion`: LocalDateTime |
 | `configuracion_perfil` → `ConfiguracionPerfil` | `id_perfil_usuario` compartida (@MapsId) | `tamano_texto`: TamanoTexto; `alto_contraste`: Boolean; `lectura_voz`: Boolean; `recordatorio_minutos`: Integer; `fecha_actualizacion`: LocalDateTime |
@@ -248,7 +249,7 @@ pruebas de metadatos y sin esa prueba:
 Validación de integración pendiente, no ejecutada durante la consolidación.
 Usar bases aisladas `diafacil_test_*` y credenciales privadas; nunca la BD de trabajo.
 
-1. Sobre el esquema desechable, comprobar las 22 tablas y sus restricciones.
+1. Sobre el esquema desechable, comprobar las 23 tablas y sus restricciones.
    Hibernate no instala triggers ni Flyway. Los datos base sí se cargan por su
    ApplicationRunner salvo deshabilitación explícita. No confundirlos con fixtures.
 2. Inspeccionar SHOW CREATE TABLE e information_schema para verificar tipos,

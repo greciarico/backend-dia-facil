@@ -19,6 +19,10 @@ ejecutadas hoy ni tablas modeladas con funcionalidades disponibles.
 [Accesibilidad por perfil](docs/accesibilidad-http.md) dispone de GET/PATCH/reset
 del cuidador y lectura privada E3.
 
+[Accesibilidad propia del Cuidador](docs/accesibilidad-cuidador-http.md):
+GET/PATCH/reset de cuenta, independientes de PerfilUsuario. Nueva tabla
+configuracion_cuidador; transición manual aditiva documentada si ddl-auto=none.
+
 Apoyo, notificaciones/push y gestión E2 todavía no tienen
 casos de uso/endpoints de producto. No crearlos como parte de una preparación local.
 
@@ -104,7 +108,7 @@ esos valores en los entornos locales y verificar posteriormente el charset y
 la collation de la base y las tablas. Esta configuracion no modifica MySQL.
 
 En `local`, `spring.jpa.hibernate.ddl-auto=update` permite crear o actualizar
-tablas a partir de las 22 entidades implementadas. Sobre una base vacia,
+tablas a partir de las 23 entidades implementadas. Sobre una base vacia,
 Hibernate genera el esquema sin ejecutar manualmente el SQL de referencia.
 Las tablas fijan utf8mb4/utf8mb4_unicode_ci y usan InnoDB; los defaults de la
 base se deben comprobar por separado.

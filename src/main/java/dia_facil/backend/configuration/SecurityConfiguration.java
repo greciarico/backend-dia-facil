@@ -37,13 +37,16 @@ public class SecurityConfiguration {
         var ajustes = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/accesibilidad");
         var cambiarAjustes = paths.matcher(HttpMethod.PATCH, "/api/perfiles/{idPerfilUsuario}/accesibilidad");
         var restablecerAjustes = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/accesibilidad/restablecer");
-        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes);
+        var ajustesCuidador = paths.matcher(HttpMethod.GET, "/api/cuidador/accesibilidad");
+        var cambiarCuidador = paths.matcher(HttpMethod.PATCH, "/api/cuidador/accesibilidad");
+        var restablecerCuidador = paths.matcher(HttpMethod.POST, "/api/cuidador/accesibilidad/restablecer");
+        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador);
         var bearer = AutenticacionBearerCuidador.filtro(sesiones, mapper);
         bearer.setRequestMatcher(privados);
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar, renovar, cerrar).permitAll()
-                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes).hasRole("CUIDADOR")
+                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador).hasRole("CUIDADOR")
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, renovarCodigo, cambiarAjustes, restablecerAjustes))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, renovarCodigo, cambiarAjustes, restablecerAjustes, cambiarCuidador, restablecerCuidador))
             .addFilterBefore(bearer, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
