@@ -34,13 +34,16 @@ public class SecurityConfiguration {
         var iconos = paths.matcher(HttpMethod.GET, "/api/iconos-actividad");
         var plantilla = paths.matcher(HttpMethod.GET, "/api/plantillas-actividad/sugerencia");
         var pictogramas = paths.matcher(HttpMethod.GET, "/api/pictogramas/arasaac");
-        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas);
+        var ajustes = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/accesibilidad");
+        var cambiarAjustes = paths.matcher(HttpMethod.PATCH, "/api/perfiles/{idPerfilUsuario}/accesibilidad");
+        var restablecerAjustes = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/accesibilidad/restablecer");
+        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes);
         var bearer = AutenticacionBearerCuidador.filtro(sesiones, mapper);
         bearer.setRequestMatcher(privados);
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar, renovar, cerrar).permitAll()
-                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas).hasRole("CUIDADOR")
+                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes).hasRole("CUIDADOR")
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, renovarCodigo))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, renovarCodigo, cambiarAjustes, restablecerAjustes))
             .addFilterBefore(bearer, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

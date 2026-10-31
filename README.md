@@ -16,7 +16,10 @@ ejecutadas hoy ni tablas modeladas con funcionalidades disponibles.
 - [Agenda/detalle Usuario](docs/agenda-usuario-http.md) y [ejecución diaria](docs/ejecucion-usuario-http.md).
 - [Datos base](docs/datos-base.md) y [modelo JPA](docs/persistence.md).
 
-Apoyo, notificaciones/push, edición de accesibilidad y gestión E2 todavía no tienen
+[Accesibilidad por perfil](docs/accesibilidad-http.md) dispone de GET/PATCH/reset
+del cuidador y lectura privada E3.
+
+Apoyo, notificaciones/push y gestión E2 todavía no tienen
 casos de uso/endpoints de producto. No crearlos como parte de una preparación local.
 
 El contrato de los endpoints de autenticacion y registro, sus DTOs y
@@ -309,9 +312,9 @@ de configuracion. No lee secretos de la copia privada ni envia correos reales.
 ## Evidencia y traslado de entorno
 
 La última validación backend registrada fue Java 21/JUnit Platform aislado:
-284 pruebas correctas y 9 MySQL omitidas. BackendApplicationTests quedó fuera
-por requerir contexto/datasource completo. Es un resultado del incremento de
-ejecución, no una nueva ejecución de esta consolidación documental.
+296 pruebas correctas y 10 MySQL omitidas (accesibilidad, 30/10/2026).
+BackendApplicationTests quedó fuera por requerir contexto/datasource completo.
+Se compiló y ejecutó la suite sin iniciar el backend local ni usar su BD.
 
 En aquel entorno el Wrapper/caché Maven presentó fallos y se usaron dependencias
 locales en target. Un nuevo equipo debe descargar/resolver dependencias con Maven;
