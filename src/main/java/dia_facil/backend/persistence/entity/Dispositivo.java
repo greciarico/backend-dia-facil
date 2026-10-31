@@ -33,6 +33,10 @@ import org.hibernate.generator.EventType;
     @Index(name = "idx_dispositivo_perfil_estado", columnList = "id_perfil_usuario,estado")
 })
 public class Dispositivo {
+    public static Dispositivo vincular(PerfilUsuario perfil, String nombre, LocalDateTime ahora) {
+        var dispositivo = new Dispositivo(); dispositivo.perfilUsuario = perfil; dispositivo.nombre = nombre;
+        dispositivo.estado = EstadoDispositivo.ACTIVO; dispositivo.fechaUltimaActividad = ahora; return dispositivo;
+    }
 
     @Id
     @Setter(AccessLevel.NONE)

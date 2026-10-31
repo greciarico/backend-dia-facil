@@ -40,6 +40,6 @@ class CrearPerfilServiceTest {
         assertEquals("LIMITE_PERFILES_ALCANZADO", assertThrows(RechazoPerfil.class, () -> new CrearPerfilService(tx).crear(3, "Persona", null)).codigo());
     }
     @Test void codigoTieneElFormatoEstable() {
-        var generator = new GeneradorCodigoPerfil(); for (int i = 0; i < 100; i++) assertTrue(generator.generar().matches("DF-[0-9]{6}"));
+        var generator = new GeneradorCodigoPerfil(); for (int i = 0; i < 100; i++) assertTrue(generator.generar().matches("DF-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{16}"));
     }
 }

@@ -60,12 +60,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * The fixture is a snapshot of the approved SQL model, not of the entity annotations.
  */
 class PersistenceModelTest {
-    private static final List<Class<?>> ENTITIES = List.of(
+    static final List<Class<?>> ENTITIES = List.of(
         Cuidador.class,
         CodigoAcceso.class,
         PerfilUsuario.class,
         ConfiguracionPerfil.class,
         Pictograma.class,
+        dia_facil.backend.persistence.entity.IconoActividad.class,
+        dia_facil.backend.persistence.entity.PalabraClaveIconoActividad.class,
         PalabraClavePictograma.class,
         PlantillaActividad.class,
         PalabraClaveActividad.class,
@@ -73,6 +75,7 @@ class PersistenceModelTest {
         Actividad.class,
         PasoActividad.class,
         Dispositivo.class,
+        dia_facil.backend.persistence.entity.CredencialDispositivo.class,
         EjecucionActividad.class,
         ProgresoPaso.class,
         SolicitudAyuda.class,
@@ -132,7 +135,7 @@ class PersistenceModelTest {
 
     @Test
     void tablesColumnsPrimaryKeysAndTypesMatchReference() {
-        assertEquals(19, tables.size());
+        assertEquals(22, tables.size());
         assertEquals(rows("T").stream().map(row -> row[1]).collect(Collectors.toSet()), tables.keySet());
         for (var row : rows("T")) {
             var table = tables.get(row[1]);
@@ -184,6 +187,38 @@ class PersistenceModelTest {
             assertEquals(row[6].toLowerCase().replace(' ', '_'),
                 fk.getOnDeleteAction().name().toLowerCase(), row[2]);
             assertTrue(ddl.contains("constraint " + row[2]), row[2] + " must be exported");
+        }
+    }
+
+    @Test
+    void activityIconsAreSeparatedFromBothKindsOfStepPictograms() throws Exception {
+        for (var entity : List.of(Actividad.class, PlantillaActividad.class)) {
+            var field = entity.getDeclaredField("iconoActividad");
+            assertEquals(dia_facil.backend.persistence.entity.IconoActividad.class, field.getType());
+            assertTrue(field.getAnnotation(ManyToOne.class).optional());
+            assertThrows(NoSuchFieldException.class, () -> entity.getDeclaredField("pictograma"));
+        }
+        for (var entity : List.of(PasoActividad.class, PlantillaPaso.class)) {
+            assertEquals(Pictograma.class, entity.getDeclaredField("pictograma").getType());
+        }
+    }
+
+    @Test
+    void initializerRepositoryQueriesCompileAgainstTheRealModelWithoutJdbc() {
+        try (var real = sessionFactory.createEntityManager()) {
+            var em = org.mockito.Mockito.mock(jakarta.persistence.EntityManager.class);
+            org.mockito.Mockito.when(em.createQuery(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(Class.class)))
+                .thenAnswer(call -> {
+                    var query = org.mockito.Mockito.spy(real.createQuery(call.getArgument(0), (Class<?>) call.getArgument(1)));
+                    org.mockito.Mockito.doReturn(List.of()).when(query).getResultList();
+                    org.mockito.Mockito.doReturn(0L).when(query).getSingleResult();
+                    return query;
+                });
+            var store = new dia_facil.backend.persistence.repository.JpaDatosBaseStore(em);
+            assertTrue(store.icono("bread").isEmpty()); assertTrue(store.pictograma("Comer").isEmpty());
+            assertTrue(store.plantilla("Desayunar").isEmpty()); assertTrue(store.pasos(1).isEmpty());
+            assertFalse(store.palabraIcono(1, "pan")); assertFalse(store.palabraPictograma(1, "comer"));
+            assertFalse(store.palabraPlantilla(1, "desayunar"));
         }
     }
 
@@ -293,9 +328,9 @@ class PersistenceModelTest {
 
     @Test
     void schemaContainsOnlyDdlAndTableStorageOptions() {
-        assertEquals(19, Pattern.compile("create table ").matcher(ddl).results().count());
-        assertEquals(19, Pattern.compile("engine=innodb").matcher(ddl).results().count());
-        assertEquals(19, Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
+        assertEquals(22, Pattern.compile("create table ").matcher(ddl).results().count());
+        assertEquals(22, Pattern.compile("engine=innodb").matcher(ddl).results().count());
+        assertEquals(22, Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
         assertFalse(ddl.contains("create trigger"));
         assertFalse(ddl.contains("insert into"));
         assertEquals(0, RejectConnections.attempts.get());

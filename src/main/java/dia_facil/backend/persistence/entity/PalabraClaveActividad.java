@@ -29,6 +29,11 @@ import org.hibernate.annotations.OnDeleteAction;
     @Index(name = "idx_palabra_actividad", columnList = "palabra")
 })
 public class PalabraClaveActividad {
+    public static PalabraClaveActividad crear(PlantillaActividad plantilla, String palabra) {
+        var keyword = new PalabraClaveActividad(); keyword.plantillaActividad = plantilla;
+        keyword.palabra = palabra; return keyword;
+    }
+
 
     @Id
     @Setter(AccessLevel.NONE)

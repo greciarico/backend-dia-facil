@@ -29,6 +29,11 @@ import org.hibernate.annotations.OnDeleteAction;
     @Index(name = "idx_palabra_pictograma", columnList = "palabra")
 })
 public class PalabraClavePictograma {
+    public static PalabraClavePictograma crear(Pictograma pictograma, String palabra) {
+        var keyword = new PalabraClavePictograma(); keyword.pictograma = pictograma;
+        keyword.palabra = palabra; return keyword;
+    }
+
 
     @Id
     @Setter(AccessLevel.NONE)

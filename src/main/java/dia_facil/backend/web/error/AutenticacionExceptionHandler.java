@@ -21,15 +21,47 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(dia_facil.backend.service.actividades.RechazoGuia.class)
+    public ResponseEntity<ProblemDetail> guiaInvalida(dia_facil.backend.service.actividades.RechazoGuia error,HttpServletRequest request){
+        return ProblemasHttp.respuesta(ProblemasHttp.crear(error.status(),error.codigo(),error.getMessage(),request.getRequestURI()));
+    }
+    @ExceptionHandler(dia_facil.backend.service.dispositivos.RechazoDispositivo.class)
+    public ResponseEntity<ProblemDetail> dispositivoInvalido(dia_facil.backend.service.dispositivos.RechazoDispositivo error, HttpServletRequest request) {
+        return ProblemasHttp.respuesta(ProblemasHttp.crear(error.status(), error.codigo(), error.getMessage(), request.getRequestURI()));
+    }
+    @ExceptionHandler(dia_facil.backend.service.actividades.RechazoActividad.class)
+    public ResponseEntity<ProblemDetail> actividadInvalida(dia_facil.backend.service.actividades.RechazoActividad error, HttpServletRequest request) {
+        int status = switch(error.codigo()) {
+            case "ACTIVIDAD_NO_ENCONTRADA" -> 404;
+            case "CONFLICTO_CREACION" -> 409;
+            default -> 400;
+        };
+        var problema = ProblemasHttp.crear(status,
+            error.codigo(), error.getMessage(), request.getRequestURI());
+        if (error.campo() != null) problema.setProperty("errores", java.util.List.of(Map.of("campo", error.campo(), "mensaje", error.getMessage())));
+        return ProblemasHttp.respuesta(problema);
+    }
+    @ExceptionHandler(dia_facil.backend.service.actividades.ArasaacClient.NoDisponible.class)
+    public ResponseEntity<ProblemDetail> pictogramasNoDisponibles(HttpServletRequest request) {
+        return ProblemasHttp.respuesta(ProblemasHttp.crear(503, "PICTOGRAMAS_NO_DISPONIBLES",
+            "No pudimos consultar los pictogramas. Inténtalo de nuevo.", request.getRequestURI()));
+    }
     @ExceptionHandler(dia_facil.backend.service.perfiles.RechazoPerfil.class)
     public ResponseEntity<ProblemDetail> perfilInvalido(dia_facil.backend.service.perfiles.RechazoPerfil error, HttpServletRequest request) {
         int status = switch (error.codigo()) {
             case "PERFIL_NO_ENCONTRADO" -> 404;
-            case "LIMITE_PERFILES_ALCANZADO" -> 409;
+            case "LIMITE_PERFILES_ALCANZADO", "CODIGO_VINCULACION_CAMBIADO" -> 409;
+            case "RENOVACION_PREMATURA" -> 429;
             case "SERVICIO_NO_DISPONIBLE" -> 503;
             default -> 400;
         };
         var problem = ProblemasHttp.crear(status, error.codigo(), error.getMessage(), request.getRequestURI());
+        if (error.renovacionEnSegundos() != null) {
+            problem.setProperty("renovacionEnSegundos", error.renovacionEnSegundos());
+            return ResponseEntity.status(status).contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON)
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(error.renovacionEnSegundos())).body(problem);
+        }
         if (error.campo() != null) problem.setProperty("errores", java.util.List.of(Map.of("campo", error.campo(), "mensaje", error.getMessage())));
         return ProblemasHttp.respuesta(problem);
     }

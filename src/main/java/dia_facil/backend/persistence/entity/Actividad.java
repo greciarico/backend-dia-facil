@@ -36,6 +36,10 @@ import org.hibernate.type.SqlTypes;
     @Index(name = "idx_actividad_agenda", columnList = "id_perfil_usuario,estado,hora")
 })
 public class Actividad {
+    public static Actividad crear(PerfilUsuario perfil, String nombre, LocalTime hora, IconoActividad icono) {
+        var actividad = new Actividad(); actividad.perfilUsuario = perfil; actividad.nombre = nombre;
+        actividad.hora = hora; actividad.iconoActividad = icono; return actividad;
+    }
 
     @Id
     @Setter(AccessLevel.NONE)
@@ -49,9 +53,9 @@ public class Actividad {
     private PerfilUsuario perfilUsuario;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "id_pictograma", nullable = true, foreignKey = @ForeignKey(name = "fk_actividad_pictograma"))
+    @JoinColumn(name = "id_icono_actividad", nullable = true, foreignKey = @ForeignKey(name = "fk_actividad_icono"))
     @OnDelete(action = OnDeleteAction.SET_NULL)
-    private Pictograma pictograma;
+    private IconoActividad iconoActividad;
 
     @Column(name = "nombre", nullable = false, length = 80)
     private String nombre;

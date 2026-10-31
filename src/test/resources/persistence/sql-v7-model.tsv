@@ -41,9 +41,10 @@ K	configuracion_perfil	chk_config_recordatorio	recordatorio_minutos IN (0,5,10,1
 T	pictograma	Pictograma	id_pictograma
 C	pictograma	id_pictograma	INT	false	-	true	false
 C	pictograma	nombre	VARCHAR(80)	false	-	false	false
-C	pictograma	url_imagen	VARCHAR(255)	false	-	false	false
+C	pictograma	url_imagen	VARCHAR(255)	true	-	false	false
+C	pictograma	id_arasaac	INT	true	-	false	false
 C	pictograma	fuente	VARCHAR(60)	true	-	false	false
-U	pictograma	uq_pictograma_nombre	nombre
+U	pictograma	uq_pictograma_arasaac	id_arasaac
 T	palabra_clave_pictograma	PalabraClavePictograma	id_palabra_clave_pictograma
 C	palabra_clave_pictograma	id_palabra_clave_pictograma	INT	false	-	true	false
 C	palabra_clave_pictograma	id_pictograma	INT	false	-	false	false
@@ -54,8 +55,8 @@ I	palabra_clave_pictograma	idx_palabra_pictograma	palabra
 T	plantilla_actividad	PlantillaActividad	id_plantilla_actividad
 C	plantilla_actividad	id_plantilla_actividad	INT	false	-	true	false
 C	plantilla_actividad	nombre	VARCHAR(80)	false	-	false	false
-C	plantilla_actividad	id_pictograma	INT	true	-	false	false
-F	plantilla_actividad	fk_plantilla_pictograma	id_pictograma	pictograma	id_pictograma	SET NULL
+C	plantilla_actividad	id_icono_actividad	INT	true	-	false	false
+F	plantilla_actividad	fk_plantilla_icono	id_icono_actividad	icono_actividad	id_icono_actividad	SET NULL
 U	plantilla_actividad	uq_plantilla_nombre	nombre
 T	palabra_clave_actividad	PalabraClaveActividad	id_palabra_clave_actividad
 C	palabra_clave_actividad	id_palabra_clave_actividad	INT	false	-	true	false
@@ -72,18 +73,18 @@ C	plantilla_paso	orden	SMALLINT UNSIGNED	false	-	false	false
 C	plantilla_paso	descripcion	VARCHAR(120)	false	-	false	false
 F	plantilla_paso	fk_plantilla_paso_plantilla	id_plantilla_actividad	plantilla_actividad	id_plantilla_actividad	CASCADE
 F	plantilla_paso	fk_plantilla_paso_pictograma	id_pictograma	pictograma	id_pictograma	SET NULL
-I	plantilla_paso	idx_plantilla_paso_orden	id_plantilla_actividad,orden
+U	plantilla_paso	uq_plantilla_paso_orden	id_plantilla_actividad,orden
 T	actividad	Actividad	id_actividad
 C	actividad	id_actividad	INT	false	-	true	false
 C	actividad	id_perfil_usuario	INT	false	-	false	false
-C	actividad	id_pictograma	INT	true	-	false	false
+C	actividad	id_icono_actividad	INT	true	-	false	false
 C	actividad	nombre	VARCHAR(80)	false	-	false	false
 C	actividad	hora	TIME	false	-	false	false
 C	actividad	guia_inicial_completada	TINYINT(1)	false	0	false	false
 C	actividad	estado	ENUM( 'ACTIVA', 'INACTIVA' )	false	'ACTIVA'	false	false
 C	actividad	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
 F	actividad	fk_actividad_perfil	id_perfil_usuario	perfil_usuario	id_perfil_usuario	CASCADE
-F	actividad	fk_actividad_pictograma	id_pictograma	pictograma	id_pictograma	SET NULL
+F	actividad	fk_actividad_icono	id_icono_actividad	icono_actividad	id_icono_actividad	SET NULL
 I	actividad	idx_actividad_agenda	id_perfil_usuario,estado,hora
 T	paso_actividad	PasoActividad	id_paso_actividad
 C	paso_actividad	id_paso_actividad	INT	false	-	true	false
@@ -189,3 +190,25 @@ F	credencial_sesion_cuidador	fk_credencial_sesion	id_sesion	sesion_cuidador	id_s
 U	credencial_sesion_cuidador	uq_credencial_access	access_hash
 U	credencial_sesion_cuidador	uq_credencial_refresh	refresh_hash
 U	credencial_sesion_cuidador	uq_credencial_generacion	id_sesion,generacion
+T	icono_actividad	IconoActividad	id_icono_actividad
+C	icono_actividad	id_icono_actividad	INT	false	-	true	false
+C	icono_actividad	codigo	VARCHAR(60)	false	-	false	false
+C	icono_actividad	nombre	VARCHAR(80)	false	-	false	false
+U	icono_actividad	uq_icono_actividad_codigo	codigo
+T	palabra_clave_icono_actividad	PalabraClaveIconoActividad	id_palabra_clave_icono_actividad
+C	palabra_clave_icono_actividad	id_palabra_clave_icono_actividad	INT	false	-	true	false
+C	palabra_clave_icono_actividad	id_icono_actividad	INT	false	-	false	false
+C	palabra_clave_icono_actividad	palabra	VARCHAR(60)	false	-	false	false
+F	palabra_clave_icono_actividad	fk_palabra_icono_actividad	id_icono_actividad	icono_actividad	id_icono_actividad	CASCADE
+U	palabra_clave_icono_actividad	uq_palabra_icono_actividad	id_icono_actividad,palabra
+I	palabra_clave_icono_actividad	idx_palabra_icono_actividad	palabra
+
+T	credencial_dispositivo	CredencialDispositivo	id_credencial_dispositivo
+C	credencial_dispositivo	id_credencial_dispositivo	BIGINT	false	-	true	false
+C	credencial_dispositivo	token_hash	BINARY(32)	false	-	false	false
+C	credencial_dispositivo	id_dispositivo	INT	true	-	false	false
+C	credencial_dispositivo	preparacion_hasta	DATETIME(6)	true	-	false	false
+F	credencial_dispositivo	fk_credencial_dispositivo	id_dispositivo	dispositivo	id_dispositivo	CASCADE
+U	credencial_dispositivo	uq_dispositivo_token	token_hash
+U	credencial_dispositivo	uq_credencial_dispositivo	id_dispositivo
+I	credencial_dispositivo	idx_preparacion_dispositivo	preparacion_hasta

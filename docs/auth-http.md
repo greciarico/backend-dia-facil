@@ -166,13 +166,20 @@ Todas las respuestas de autenticación y errores incluyen `Cache-Control` con
 
 ## Seguridad y clientes
 
-Solo los cinco POST exactos documentados son públicos y están excluidos de CSRF.
-GET sesion, GET /api/perfiles, GET /api/perfiles/{idPerfilUsuario}, GET /api/perfiles/{idPerfilUsuario}/actividades y POST /api/perfiles requieren ROLE_CUIDADOR obtenido por Bearer.
-La consulta de perfiles se documenta en perfiles-http.md. Las demás rutas se deniegan.
+Los cinco POST de autenticación documentados son públicos y están excluidos de CSRF.
+La cadena del cuidador autoriza expresamente sesión, perfiles, consulta/creación
+de actividades, E1 y catálogos/sugerencias con ROLE_CUIDADOR obtenido por Bearer.
+Consultar [perfiles](perfiles-http.md), [actividades](actividades-http.md),
+[vinculación E1](vinculacion-http.md), [iconos](iconos-actividad-http.md),
+[plantillas](plantillas-actividad-http.md) y [ARASAAC](pictogramas-arasaac.md).
+La cadena separada de [E3](dispositivos-e3.md) protege /api/dispositivos/** y
+/api/usuario/**; no admite sesión del cuidador como credencial de Usuario.
+Las rutas no autorizadas expresamente se deniegan.
 No hay login por formulario, HTTP Basic, JWT ni autenticación por contraseña.
 Cerrar-sesion es explícito; no se habilita el logout por formulario de Spring.
-POST /api/perfiles también está excluido de CSRF, pero exige Bearer y ROLE_CUIDADOR.
-La protección CSRF sigue habilitada fuera de esas seis rutas POST exactas.
+Creación de perfiles/actividades y renovación E1 también tienen exclusión CSRF
+específica y exigen Bearer/ROLE_CUIDADOR. La cadena E3 declara sus propias
+mutaciones autorizadas. No deshabilitar CSRF globalmente al añadir módulos.
 
 Validación local mediante AuthenticationFilter, ProviderManager y AuthenticationProvider
 de Spring Security ya instalado; el provider recibe hashes y construye Identidad.

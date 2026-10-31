@@ -23,6 +23,7 @@ class ActividadControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean SesionCuidadorService sesiones;
     @MockitoBean ActividadService actividades;
+    @MockitoBean dia_facil.backend.service.actividades.CrearActividadService creacion;
     private static final String ACCESS = "a_" + "A".repeat(43);
     private void autenticar() {
         when(sesiones.autenticar(ACCESS)).thenReturn(new SesionCuidadorService.Identidad(1L,
@@ -67,7 +68,7 @@ class ActividadControllerTest {
                 .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.codigo").value(renovable ? "SESION_REQUIERE_RENOVACION" : "SESION_INVALIDA"));
         }
         verifyNoInteractions(actividades);
-        mvc.perform(post("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
+        mvc.perform(post("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/perfiles/12/actividades/extra").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
     }
 
@@ -77,5 +78,35 @@ class ActividadControllerTest {
         when(actividades.consultar(3, 12)).thenThrow(new org.springframework.dao.DataAccessResourceFailureException("private detail"));
         mvc.perform(get("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS))
             .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.codigo").value("SERVICIO_NO_DISPONIBLE"));
+    }
+
+    @Test void crear201UsaPropietarioDelPrincipalSinCsrfNiEntidadJpa() throws Exception {
+        autenticar();
+        when(creacion.crear(eq(3),eq(12),any())).thenReturn(new ActividadResumen(27,"Desayuno","07:00","bread"));
+        mvc.perform(post("/api/perfiles/12/actividades").header("Authorization","Bearer " + ACCESS)
+            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            .content("""
+                {"nombre":"Desayuno","hora":"07:00","codigoIcono":"bread","idCuidador":999,
+                 "pasos":[{"descripcion":"Paso final","idArasaac":null}]}
+                """))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.idActividad").value(27))
+            .andExpect(jsonPath("$.hora").value("07:00")).andExpect(jsonPath("$.codigoIcono").value("bread"))
+            .andExpect(header().string("Cache-Control",org.hamcrest.Matchers.containsString("no-store")))
+            .andExpect(jsonPath("$.perfilUsuario").doesNotExist()).andExpect(header().doesNotExist("Set-Cookie"));
+        verify(creacion).crear(eq(3),eq(12),any());
+    }
+    @Test void erroresDelComandoMantienenCodigosYCamposSeguros() throws Exception {
+        autenticar();
+        for (var codigo : List.of("SOLICITUD_INVALIDA","ICONO_NO_ENCONTRADO","PICTOGRAMA_INVALIDO","CONFLICTO_CREACION")) {
+            when(creacion.crear(eq(3),eq(12),any())).thenThrow(new dia_facil.backend.service.actividades.RechazoActividad(codigo,"Mensaje seguro","pasos"));
+            mvc.perform(post("/api/perfiles/12/actividades").header("Authorization","Bearer " + ACCESS)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().is(codigo.equals("CONFLICTO_CREACION")?409:400))
+                .andExpect(jsonPath("$.codigo").value(codigo)).andExpect(jsonPath("$.errores[0].campo").value("pasos"));
+        }
+        when(creacion.crear(eq(3),eq(12),any())).thenThrow(RechazoPerfil.noEncontrado());
+        mvc.perform(post("/api/perfiles/12/actividades").header("Authorization","Bearer " + ACCESS)
+            .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().isNotFound()).andExpect(jsonPath("$.codigo").value("PERFIL_NO_ENCONTRADO"));
     }
 }

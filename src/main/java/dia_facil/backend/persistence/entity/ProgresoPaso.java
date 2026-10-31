@@ -33,6 +33,9 @@ import org.hibernate.type.SqlTypes;
     @Index(name = "idx_progreso_paso", columnList = "id_paso_actividad")
 })
 public class ProgresoPaso {
+    public static ProgresoPaso alcanzar(EjecucionActividad ejecucion, PasoActividad paso) {
+        var progreso = new ProgresoPaso(); progreso.ejecucionActividad = ejecucion; progreso.pasoActividad = paso; return progreso;
+    }
 
     @Id
     @Setter(AccessLevel.NONE)

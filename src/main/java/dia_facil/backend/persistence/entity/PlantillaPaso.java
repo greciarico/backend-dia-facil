@@ -7,10 +7,10 @@ import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,10 +22,15 @@ import org.hibernate.annotations.OnDeleteAction;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "plantilla_paso", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", indexes = {
-    @Index(name = "idx_plantilla_paso_orden", columnList = "id_plantilla_actividad,orden")
+@Table(name = "plantilla_paso", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", uniqueConstraints = {
+    @UniqueConstraint(name = "uq_plantilla_paso_orden", columnNames = {"id_plantilla_actividad", "orden"})
 })
 public class PlantillaPaso {
+    public static PlantillaPaso crear(PlantillaActividad plantilla, Integer orden, String descripcion, Pictograma pictograma) {
+        var paso = new PlantillaPaso(); paso.plantillaActividad = plantilla; paso.orden = orden;
+        paso.descripcion = descripcion; paso.pictograma = pictograma; return paso;
+    }
+
 
     @Id
     @Setter(AccessLevel.NONE)
