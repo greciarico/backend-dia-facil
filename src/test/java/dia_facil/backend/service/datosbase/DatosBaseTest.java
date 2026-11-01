@@ -38,20 +38,45 @@ class DatosBaseTest {
             List.of(new DatosBase.Plantilla("Prueba", null, List.of(), List.of(new DatosBase.Paso(1, "Paso", "Acción")))))));
     }
     @Test void recursoEmpaquetadoConservaLasDefinicionesActuales() {
-        var datos = fuente(); assertEquals(52, datos.iconos().size()); assertEquals(5, datos.pictogramas().size());
-        assertEquals(18, datos.iconos().stream().mapToInt(i -> i.palabras().size()).sum());
+        var datos = fuente(); assertEquals(52, datos.iconos().size()); assertEquals(18, datos.pictogramas().size());
+        assertEquals(78, datos.iconos().stream().mapToInt(i -> i.palabras().size()).sum());
         assertEquals(13, datos.pictogramas().stream().mapToInt(p -> p.palabras().size()).sum());
-        assertEquals(1, datos.plantillas().size());
+        assertEquals(List.of("Desayunar", "Ir al colegio", "Estudiar", "Almorzar", "Cenar", "Prepararse para dormir"),
+            datos.plantillas().stream().map(DatosBase.Plantilla::nombre).toList());
         var plantilla = datos.plantillas().getFirst(); assertEquals("Desayunar", plantilla.nombre()); assertEquals("bread", plantilla.icono());
         assertEquals(List.of("desayuno", "desayunar", "desayunando"), plantilla.palabras());
         assertEquals(List.of(1, 2, 3, 4, 5), plantilla.pasos().stream().map(DatosBase.Paso::orden).toList());
         assertEquals(List.of("Lávate las manos", "Prepara la mesa", "Sirve la comida", "Come", "Limpia y recoge"), plantilla.pasos().stream().map(DatosBase.Paso::descripcion).toList());
         var ids = List.of(2443, 5549, 36965, 2349, 8688);
-        assertEquals(ids, datos.pictogramas().stream().map(DatosBase.Pictograma::idArasaac).toList());
+        assertEquals(ids, datos.pictogramas().stream().limit(5).map(DatosBase.Pictograma::idArasaac).toList());
         assertEquals(List.of("enjabonar las manos", "poner la mesa", "servir", "comer", "secar"),
-            datos.pictogramas().stream().map(DatosBase.Pictograma::nombre).toList());
+            datos.pictogramas().stream().limit(5).map(DatosBase.Pictograma::nombre).toList());
         assertEquals(ids.stream().map(id -> "arasaac:" + id).toList(), plantilla.pasos().stream().map(DatosBase.Paso::pictograma).toList());
         assertTrue(datos.pictogramas().stream().allMatch(p -> p.urlImagen() == null && "ARASAAC".equals(p.fuente())));
+    }
+    @Test void mapaCuradoEsExactoCompartidoYSinIdsAdicionales() {
+        var datos = fuente(); var esperados = Map.of("Ir al colegio", List.of(8166, 17026, 37518, 37036),
+            "Estudiar", List.of(6640, 2359, 32814, 6474), "Almorzar", List.of(2443, 38944, 2349, 17298),
+            "Cenar", List.of(2443, 38944, 2349, 17298), "Prepararse para dormir", List.of(2522, 2326, 2369));
+        for (var plantilla : datos.plantillas()) {
+            if (esperados.containsKey(plantilla.nombre())) assertEquals(esperados.get(plantilla.nombre()).stream().map(id -> "arasaac:" + id).toList(),
+                plantilla.pasos().stream().map(DatosBase.Paso::pictograma).toList(), plantilla.nombre());
+            assertEquals(java.util.stream.IntStream.rangeClosed(1, plantilla.pasos().size()).boxed().toList(),
+                plantilla.pasos().stream().map(DatosBase.Paso::orden).toList());
+        }
+        assertEquals(18, datos.pictogramas().stream().map(DatosBase.Pictograma::idArasaac).distinct().count());
+        assertTrue(datos.plantillas().stream().flatMap(p -> p.pasos().stream()).allMatch(p -> p.pictograma() != null));
+        assertTrue(datos.pictogramas().stream().skip(5).allMatch(p -> p.palabras().isEmpty()));
+    }
+    @Test void curacionNoSobrescribePasosPendientesNiRetiraKeywordsSinTransicionExplicita() {
+        var datos = fuente(); var store = new Memoria(); var sync = new SincronizadorDatosBase(store);
+        sync.sincronizar(datos);
+        var id = store.plantillas.get("Estudiar").id(); var actual = store.pasos.get(id).getFirst();
+        store.pasos.get(id).set(0, new DatosBaseStore.Paso(1, actual.descripcion(), null));
+        var food = store.iconos.get("food").id(); store.crearPalabraIcono(food, "cenar");
+        var resultado = sync.sincronizar(datos);
+        assertEquals(0, resultado.creados()); assertTrue(resultado.conflictos().contains("plantilla:Estudiar:pasos"));
+        assertNull(store.pasos.get(id).getFirst().pictograma()); assertTrue(store.palabraIcono(food, "cenar"));
     }
     @Test void validacionCompletaAntesDeCualquierAccesoPersistente() {
         var datos = fuente(); var store = mock(DatosBaseStore.class); var sync = new SincronizadorDatosBase(store);
@@ -70,10 +95,35 @@ class DatosBaseTest {
     }
     @Test void vacioSeCompletaYLaRepeticionNoInsertaNiCambiaIdentidades() {
         var store = new Memoria(); var sync = new SincronizadorDatosBase(store); var datos = fuente();
-        var primero = sync.sincronizar(datos); assertEquals(97, primero.creados()); assertTrue(primero.conflictos().isEmpty());
+        var primero = sync.sincronizar(datos); assertEquals(214, primero.creados()); assertTrue(primero.conflictos().isEmpty());
         var identidades = Map.copyOf(store.iconos);
-        var segundo = sync.sincronizar(datos); assertEquals(0, segundo.creados()); assertEquals(97, segundo.existentes());
+        var segundo = sync.sincronizar(datos); assertEquals(0, segundo.creados()); assertEquals(214, segundo.existentes());
         assertEquals(identidades, store.iconos); assertTrue(segundo.conflictos().isEmpty());
+    }
+    @Test void ampliaElPilotoExistenteSinReemplazarIdentidadesYConservaLaCuracionAprobada() {
+        var datos = fuente(); var store = new Memoria(); var sync = new SincronizadorDatosBase(store);
+        Map<String, List<String>> palabrasPrevias = Map.of("bed", List.of("cama", "descansar", "dormir"),
+            "dish-of-food", List.of("almorzar", "almuerzo"), "food", List.of(),
+            "open-book", List.of("colegio", "estudiar", "estudio", "leer", "tarea"),
+            "bread", List.of("cena", "cenar", "desayunar", "desayuno", "pan"), "walk", List.of("caminar", "ejercicio", "pasear"));
+        var iconosPrevios = datos.iconos().stream().map(i -> new DatosBase.Icono(i.codigo(), i.nombre(),
+            palabrasPrevias.getOrDefault(i.codigo(), List.of()))).toList();
+        var piloto = new DatosBase(iconosPrevios, datos.pictogramas().subList(0, 5), List.of(datos.plantillas().getFirst()));
+        assertEquals(97, sync.sincronizar(piloto).creados());
+        var identidades = Map.copyOf(store.pictogramas); var desayuno = store.plantillas.get("Desayunar");
+        var pasosDesayuno = List.copyOf(store.pasos.get(desayuno.id()));
+        var resultado = sync.sincronizar(datos);
+        assertEquals(117, resultado.creados()); assertTrue(resultado.conflictos().isEmpty());
+        assertEquals(6, store.plantillas.size()); identidades.forEach((clave, valor) -> assertEquals(valor, store.pictogramas.get(clave)));
+        assertEquals(desayuno, store.plantillas.get("Desayunar")); assertEquals(pasosDesayuno, store.pasos.get(desayuno.id()));
+        assertEquals(24, store.pasos.values().stream().mapToInt(List::size).sum());
+        assertEquals(0, store.pasos.values().stream().flatMap(List::stream).filter(p -> p.pictograma() == null).count());
+        for (String nombre : List.of("Almorzar", "Cenar")) {
+            var pasos = store.pasos.get(store.plantillas.get(nombre).id());
+            assertEquals(store.pictogramaArasaac(2443).orElseThrow().id(), pasos.get(0).pictograma());
+            assertEquals(store.pictogramaArasaac(2349).orElseThrow().id(), pasos.get(2).pictograma());
+        }
+        assertEquals(0, sync.sincronizar(datos).creados());
     }
     @Test void reiniciarAntesDelBackfillNoDuplicaPictogramasNiReasignaReferencias() {
         var store = new Memoria(); var sync = new SincronizadorDatosBase(store); var datos = fuente();

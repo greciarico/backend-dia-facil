@@ -48,10 +48,12 @@ class DatosBaseMySqlTest {
                     var datos = LectorDatosBase.leer(JsonMapper.builder().build(), new ClassPathResource("db/datos-base.json"));
                     var store = new JpaDatosBaseStore(em); var esquema = new VerificadorEsquemaDatosBase(em);
                     var sync = new SincronizadorDatosBase(store); var inicializador = new InicializadorDatosBase(datos, sync, esquema, manager);
-                    assertEquals(97, inicializador.inicializar().creados());
+                    assertEquals(214, inicializador.inicializar().creados());
                     assertEquals(0, inicializador.inicializar().creados());
                     assertEquals(52, numero(c, "SELECT COUNT(*) FROM icono_actividad"));
-                    assertEquals(5, numero(c, "SELECT COUNT(*) FROM plantilla_paso"));
+                    assertEquals(6, numero(c, "SELECT COUNT(*) FROM plantilla_actividad"));
+                    assertEquals(24, numero(c, "SELECT COUNT(*) FROM plantilla_paso"));
+                    assertEquals(0, numero(c, "SELECT COUNT(*) FROM plantilla_paso WHERE id_pictograma IS NULL"));
                     assertEquals(0, numero(c, "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='plantilla_paso' AND INDEX_NAME='idx_plantilla_paso_orden'"));
 
                     // Real user entities are independent of the system template.
@@ -66,10 +68,11 @@ class DatosBaseMySqlTest {
                         em.createNativeQuery("INSERT INTO ejecucion_actividad(id_actividad,fecha) VALUES(:id,'2026-01-01')").setParameter("id", actividad).executeUpdate();
                     });
                     var usuarioAntes = usuario(c);
-                    ejecutar(c, "UPDATE plantilla_paso SET descripcion='Cambio revisado' WHERE orden=1");
+                    comprobarPromocionCurada(c, usuarioAntes);
+                    ejecutar(c, "UPDATE plantilla_paso SET descripcion='Cambio revisado' WHERE orden=1 AND id_plantilla_actividad=(SELECT id_plantilla_actividad FROM plantilla_actividad WHERE nombre='Desayunar')");
                     assertFalse(inicializador.inicializar().conflictos().isEmpty());
                     assertEquals(usuarioAntes, usuario(c));
-                    ejecutar(c, "UPDATE plantilla_paso SET descripcion='Lávate las manos' WHERE orden=1");
+                    ejecutar(c, "UPDATE plantilla_paso SET descripcion='Lávate las manos' WHERE orden=1 AND id_plantilla_actividad=(SELECT id_plantilla_actividad FROM plantilla_actividad WHERE nombre='Desayunar')");
 
                     // A real write followed by an unknown failure must roll back completely.
                     var ampliados = new ArrayList<>(datos.iconos()); ampliados.add(new DatosBase.Icono("prueba-rollback", "Prueba", List.of()));
@@ -79,7 +82,7 @@ class DatosBaseMySqlTest {
                     assertEquals(0, numero(c, "SELECT COUNT(*) FROM icono_actividad WHERE codigo='prueba-rollback'"));
 
                     // Force both transactions to observe the same missing position.
-                    ejecutar(c, "DELETE FROM plantilla_paso WHERE orden=2");
+                    ejecutar(c, "DELETE FROM plantilla_paso WHERE orden=2 AND id_plantilla_actividad=(SELECT id_plantilla_actividad FROM plantilla_actividad WHERE nombre='Desayunar')");
                     var concurrenteStore = spy(store); var barrera = new CountDownLatch(2);
                     doAnswer(i -> { barrera.countDown(); assertTrue(barrera.await(15, TimeUnit.SECONDS)); return i.callRealMethod(); })
                         .when(concurrenteStore).crearPaso(anyInt(), eq(2), anyString(), anyInt());
@@ -89,7 +92,7 @@ class DatosBaseMySqlTest {
                         var a = pool.submit(concurrente::inicializar); var b = pool.submit(concurrente::inicializar);
                         assertEquals(1, a.get(40, TimeUnit.SECONDS).creados() + b.get(40, TimeUnit.SECONDS).creados());
                     } finally { pool.shutdownNow(); }
-                    assertEquals(5, numero(c, "SELECT COUNT(*) FROM plantilla_paso"));
+                    assertEquals(24, numero(c, "SELECT COUNT(*) FROM plantilla_paso"));
                     assertEquals(0, numero(c, "SELECT COUNT(*) FROM (SELECT orden FROM plantilla_paso GROUP BY id_plantilla_actividad,orden HAVING COUNT(*)>1) d"));
                     assertThrows(SQLException.class, () -> ejecutar(c, "INSERT INTO plantilla_paso(id_plantilla_actividad,orden,descripcion) SELECT id_plantilla_actividad,1,'Duplicado' FROM plantilla_actividad WHERE nombre='Desayunar'"));
                     ejecutar(c, "INSERT INTO plantilla_actividad(nombre) VALUES('Otra plantilla de prueba')");
@@ -113,6 +116,7 @@ class DatosBaseMySqlTest {
             } finally {
                 StandardServiceRegistryBuilder.destroy(registry);
                 ejecutar(c, "DROP PROCEDURE IF EXISTS df_unique_plantilla_paso_orden");
+                ejecutar(c, "DROP PROCEDURE IF EXISTS df_promover_catalogo_seis_rutinas");
                 for (var entity : PersistenceModelTest.ENTITIES.reversed()) {
                     ejecutar(c, "DROP TABLE IF EXISTS " + entity.getAnnotation(jakarta.persistence.Table.class).name());
                 }
@@ -121,6 +125,37 @@ class DatosBaseMySqlTest {
     }
     private static long numero(Connection c, String sql) throws SQLException {
         try (var statement = c.createStatement(); var rs = statement.executeQuery(sql)) { assertTrue(rs.next()); return rs.getLong(1); }
+    }
+    private static void comprobarPromocionCurada(Connection c, Map<String, List<String>> usuarioAntes) throws Exception {
+        String pendientes = "SELECT COUNT(*) FROM plantilla_paso WHERE id_pictograma IS NULL";
+        String cena = "SELECT COUNT(*) FROM palabra_clave_icono_actividad k JOIN icono_actividad i USING(id_icono_actividad) WHERE i.codigo='food' AND k.palabra IN ('cena','cenar','cenando')";
+        ejecutar(c, "UPDATE plantilla_paso s JOIN plantilla_actividad t USING(id_plantilla_actividad) SET s.id_pictograma=NULL WHERE t.nombre<>'Desayunar' AND NOT(t.nombre IN ('Almorzar','Cenar') AND s.orden IN (1,3))");
+        ejecutar(c, "INSERT INTO palabra_clave_icono_actividad(id_icono_actividad,palabra) SELECT id_icono_actividad,'cena' FROM icono_actividad WHERE codigo='food'");
+        ejecutar(c, "INSERT INTO palabra_clave_icono_actividad(id_icono_actividad,palabra) SELECT id_icono_actividad,'cenar' FROM icono_actividad WHERE codigo='food'");
+        ejecutar(c, "INSERT INTO palabra_clave_icono_actividad(id_icono_actividad,palabra) SELECT id_icono_actividad,'cenando' FROM icono_actividad WHERE codigo='food'");
+        String sql = Files.readString(Path.of("docs/sql/promover-catalogo-seis-rutinas.sql"));
+        ejecutar(c, sql.substring(sql.indexOf("CREATE PROCEDURE"), sql.indexOf("END$$") + 3));
+        assertEquals(15, numero(c, pendientes));
+        ejecutar(c, "UPDATE plantilla_paso s JOIN plantilla_actividad t USING(id_plantilla_actividad) SET s.descripcion='Conflicto' WHERE t.nombre='Estudiar' AND s.orden=1");
+        assertThrows(SQLException.class, () -> ejecutar(c, "CALL df_promover_catalogo_seis_rutinas()"));
+        assertEquals(15, numero(c, pendientes)); assertEquals(3, numero(c, cena));
+        ejecutar(c, "UPDATE plantilla_paso s JOIN plantilla_actividad t USING(id_plantilla_actividad) SET s.descripcion='Prepara tus materiales' WHERE t.nombre='Estudiar' AND s.orden=1");
+        ejecutar(c, "UPDATE pictograma SET fuente='OTRA' WHERE id_arasaac=8166");
+        assertThrows(SQLException.class, () -> ejecutar(c, "CALL df_promover_catalogo_seis_rutinas()"));
+        assertEquals(15, numero(c, pendientes)); assertEquals(3, numero(c, cena));
+        ejecutar(c, "UPDATE pictograma SET fuente='ARASAAC' WHERE id_arasaac=8166");
+        ejecutar(c, "CREATE TRIGGER df_test_fallo_promocion BEFORE DELETE ON palabra_clave_icono_actividad FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Fallo simulado'");
+        try {
+            assertThrows(SQLException.class, () -> ejecutar(c, "CALL df_promover_catalogo_seis_rutinas()"));
+            assertEquals(15, numero(c, pendientes)); assertEquals(3, numero(c, cena));
+        } finally { ejecutar(c, "DROP TRIGGER df_test_fallo_promocion"); }
+        ejecutar(c, "CALL df_promover_catalogo_seis_rutinas()");
+        assertEquals(0, numero(c, pendientes)); assertEquals(0, numero(c, cena));
+        ejecutar(c, "CALL df_promover_catalogo_seis_rutinas()");
+        assertEquals(0, numero(c, pendientes)); assertEquals(0, numero(c, cena));
+        assertEquals(usuarioAntes, usuario(c));
+        assertEquals(18, numero(c, "SELECT COUNT(*) FROM pictograma"));
+        ejecutar(c, "DROP PROCEDURE df_promover_catalogo_seis_rutinas");
     }
     private static void ejecutar(Connection c, String sql) throws SQLException { try (var statement = c.createStatement()) { statement.execute(sql); } }
     private static Map<String, List<String>> usuario(Connection c) throws SQLException {
