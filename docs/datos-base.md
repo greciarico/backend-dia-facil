@@ -2,8 +2,8 @@
 
 Actualización ARASAAC: [modelo y transición](pictogramas-arasaac.md). Pictogramas
 externos usan idArasaac UNIQUE y referencias arasaac:ID en el JSON, sin URL
-persistida. El piloto Desayunar ya utiliza los cinco IDs aprobados; ejecutar el
-[backfill específico](desayunar-arasaac.md) en la BD existente antes del arranque.
+persistida. El piloto Desayunar ya utiliza los cinco IDs aprobados; su
+[backfill específico](desayunar-arasaac.md) es histórico y no se repite por esta ampliación.
 La exigencia anterior de uq_pictograma_nombre se sustituye por uq_pictograma_arasaac;
 en BD existentes preparar la transición estructural explícita antes de arrancar.
 
@@ -31,16 +31,87 @@ El cargador usa ClassPathResource y el ObjectMapper de Spring; no necesita los
 directorios frontend/documentacion en runtime. No interpreta SQL ni busca archivos
 de imágenes en disco. No se añade generador SQL ni comando --check.
 
-El JSON se extrajo de los datos existentes, conservando:
+El catálogo ejecutable actual contiene:
 
-- 52 iconos y 18 palabras clave de iconos;
-- cinco pictogramas y 13 palabras clave de pictogramas;
-- Desayunar, su icono bread, sus tres palabras clave y cinco pasos ordenados.
+- 52 iconos y 78 palabras clave de iconos;
+- 18 pictogramas y 13 palabras clave de pictogramas;
+- seis plantillas, 23 palabras clave de plantillas y 24 pasos ordenados;
+- Desayunar intacta, con bread, sus tres palabras clave y los cinco pictogramas aprobados.
 
-Una BD nueva recibe 97 filas base. Sus IDs son generados por BD, no constantes.
+Una BD nueva recibe 214 filas base. Sus IDs son generados por BD, no constantes.
 Las referencias del JSON usan código de icono, `arasaac:ID` para pictogramas
 externos y nombre estable de plantilla; nombre de pictograma solo en compatibilidad legacy.
 Cambiar un nombre usado como identidad no es una operación automática de renombrado.
+
+## Catálogo de seis rutinas con curación aprobada
+
+| Plantilla | Icono existente | Pasos | Pictogramas predeterminados |
+| --- | --- | ---: | --- |
+| Desayunar | bread | 5 | Los cinco aprobados, sin cambios |
+| Ir al colegio | school | 4 | 8166, 17026, 37518, 37036 |
+| Estudiar | open-book | 4 | 6640, 2359, 32814, 6474 |
+| Almorzar | dish-of-food | 4 | 2443, 38944, 2349, 17298 |
+| Cenar | food | 4 | 2443, 38944, 2349, 17298 |
+| Prepararse para dormir | bed | 3 | 2522, 2326, 2369 |
+
+IDs por orden. La curación se recuperó de las actividades persistidas 5–9 de la
+BD de desarrollo y fue aprobada visualmente por el cuidador. La última actividad
+real se llama Dormir; el nombre canónico de la plantilla permanece Prepararse para
+dormir. Los 24 pasos base tienen predeterminado. Los 13 pictogramas incorporados
+no reciben keywords inventadas; se mantienen las 13 asociaciones anteriores.
+No se usan posiciones de búsqueda, URLs persistidas ni consultas ARASAAC al cargar.
+La opcionalidad de pictograma en pasos propios sigue siendo válida.
+
+Las seis familias de sugerencias, sus variantes y la corrección general de
+prefijos están documentadas en [iconos HTTP](iconos-actividad-http.md). No cambia
+el matching de plantillas ni su selección independiente de iconos. Cenar conserva
+food como predeterminado, pero sus sugerencias usan bread, coffee y juice.
+No se asignaron comer, comida, clases o tarea aislada a las nuevas plantillas.
+
+### Transición de las plantillas ya existentes
+
+El inicializador sigue siendo aditivo: no reemplaza pictogramas null de pasos
+existentes ni elimina las antiguas asociaciones food–cena/cenar/cenando. Para la
+BD donde se realizó la curación, preparar respaldo, detener todas las instancias
+del backend y ejecutar explícitamente [esta transición](sql/promover-catalogo-seis-rutinas.sql)
+en el cliente MySQL sobre la BD revisada, antes de arrancar con el JSON nuevo.
+No ejecutar el SQL v7 completo. No usar una opción de continuar ante errores.
+
+La transición requiere las cinco plantillas con textos/órdenes/iconos aprobados
+y los 15 IDs ARASAAC distintos ya presentes por la curación. No inserta recursos
+ni obtiene datos desde actividades de usuario. Verifica estructura InnoDB y UNIQUE
+id_arasaac; bloquea filas y valida el grupo completo antes de escribir.
+Solo completa 15 referencias null de PlantillaPaso y retira las tres keywords
+autorizadas de food. Acepta referencias ya finales para permitir repetición.
+Cualquier otro valor previo, paso extra/faltante o recurso no disponible aborta
+con rollback. No cambia Desayunar, textos, órdenes, pictogramas ni pasos reales.
+No depende de IDs internos fijos: resuelve nombre de plantilla, orden, código
+de icono e idArasaac. La rutina auxiliar se crea y elimina solo al ejecutar el
+script; nunca se registra en el arranque. Si falla, se conserva para inspección
+y el siguiente intento recrea únicamente esa rutina auxiliar.
+
+Resultado esperado en la BD anterior compatible: referencias_actualizadas=15,
+keywords_retiradas=3; una repetición produce 0/0. Después, arrancar normalmente:
+el inicializador agrega las keywords faltantes y un segundo arranque no inserta
+filas. En otra BD existente que no tenga los pictogramas curados, el script aborta;
+no improvisar sustitutos ni desactivar la protección del inicializador.
+Una BD nueva se inicializa directamente desde el JSON y no necesita este script.
+Los scripts históricos no se convierten en seeders; SQL v7 conserva su instantánea inicial.
+
+Seleccionar otro pictograma en una actividad propia nunca modifica el catálogo.
+Las futuras promociones también requerirán revisión explícita de datos base.
+
+Validación (1 de noviembre de 2026): 248 pruebas frontend, TypeScript y lint pasan.
+Transición probada realmente con el cliente MySQL en una BD desechable separada:
+mapa completo, rechazo de texto/FK/fuente incompatibles, rollback después de UPDATE
+ante fallo provocado en DELETE, repetición 0/0, 18 pictogramas sin duplicados y
+Desayunar/actividades de prueba intactas. La BD desechable se eliminó al terminar;
+no se ejecutó la transición en la BD de desarrollo. Se ampliaron las pruebas JUnit
+de catálogo, matching, creación, idempotencia y MySQL opt-in. Maven sigue bloqueado
+por acceso Java/Path.toRealPath a clases/JAR: pendientes esa suite en el entorno
+normal y validación física de las nuevas sugerencias después de la transición.
+
+## Ampliación del catálogo
 
 Para ampliar los datos, editar el JSON; si se añade un icono, agregar su PNG y
 require literal al catálogo frontend. No es necesario editar clases Java, ejecutar
