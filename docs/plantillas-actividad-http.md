@@ -38,7 +38,10 @@ Normaliza espacios, mayúsculas y acentos. Prioridad: nombre completo exacto,
 keyword exacta, después nombre o keyword como palabras completas dentro de la
 consulta. Desempata por nombre normalizado y después ID. No hay coincidencia por
 prefijo ni IA: Des no carga Desayunar; Desayuno del domingo coincide por desayuno.
-Keywords base actuales: desayuno, desayunar, desayunando.
+El catálogo base incluye Desayunar, Ir al colegio, Estudiar, Almorzar, Cenar y
+Prepararse para dormir; sus variantes explícitas viven en datos-base.json.
+Los 24 pasos tienen pictogramas curados; ver [datos base y transición](datos-base.md).
+La opcionalidad null sigue admitida por el contrato y por los pasos propios.
 
 Nombre ausente, vacío o menor de tres caracteres devuelve plantilla null. Más de
 80 caracteres: 400 SOLICITUD_INVALIDA. Errores de sesión e infraestructura conservan

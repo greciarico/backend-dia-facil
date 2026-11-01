@@ -84,4 +84,40 @@ class CrearActividadServiceTest {
         for (int i=0;i<2;i++) { var paso=(PasoActividad)escrituras.get(i+2); assertEquals(i+1,paso.getOrden()); assertTrue(paso.getActivo()); assertSame(actividad,paso.getActividad()); }
         assertSame(pic,((PasoActividad)escrituras.get(2)).getPictograma()); assertNull(((PasoActividad)escrituras.get(3)).getPictograma()); verify(em).flush();
     }
+    @Test void creaLasSeisRutinasConPasosPropiosYPictogramasOpcionalesSinConsultarArasaac() {
+        var base = dia_facil.backend.service.datosbase.LectorDatosBase.leer(tools.jackson.databind.json.JsonMapper.builder().build(),
+            new org.springframework.core.io.ClassPathResource("db/datos-base.json"));
+        var perfiles = mock(PerfilUsuarioRepository.class); var identidad = mock(PerfilUsuarioService.class);
+        var iconos = mock(IconoActividadRepository.class); var pictos = mock(PictogramaRepository.class);
+        var arasaac = mock(PictogramaArasaacService.class); var em = mock(EntityManager.class);
+        var perfil = PerfilUsuario.crear(null, "Persona", null, "DF-TEST");
+        when(perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
+        var locales = base.pictogramas().stream().map(p -> Pictograma.crearArasaac(p.nombre(), p.idArasaac())).toList();
+        when(pictos.findByIdArasaacIn(any())).thenReturn(locales);
+        var escrituras = new ArrayList<Object>();
+        doAnswer(call -> {
+            Object entity = call.getArgument(0); escrituras.add(entity);
+            if (entity instanceof Actividad a) ReflectionTestUtils.setField(a, "idActividad", 27);
+            return null;
+        }).when(em).persist(any());
+        var tx = new CreacionActividadTransaccionalService(perfiles, iconos, pictos, em);
+        var servicio = new CrearActividadService(identidad, iconos, pictos, arasaac, tx);
+        for (var plantilla : base.plantillas()) {
+            escrituras.clear();
+            when(iconos.findByCodigo(plantilla.icono())).thenReturn(Optional.of(IconoActividad.crear(plantilla.icono(), "Icono")));
+            var entrada = new CrearActividad(plantilla.nombre(), "08:00", plantilla.icono(), plantilla.pasos().stream()
+                .map(p -> new CrearActividad.Paso(p.descripcion(), p.pictograma() == null ? null : Integer.valueOf(p.pictograma().substring(8)))).toList());
+            var resultado = servicio.crear(3, 12, entrada);
+            assertEquals(plantilla.nombre(), resultado.nombre()); assertEquals(plantilla.pasos().size() + 1, escrituras.size());
+            var actividad = (Actividad) escrituras.getFirst(); assertSame(perfil, actividad.getPerfilUsuario());
+            for (int i = 0; i < plantilla.pasos().size(); i++) {
+                var paso = (PasoActividad) escrituras.get(i + 1); var esperado = entrada.pasos().get(i);
+                assertEquals(i + 1, paso.getOrden()); assertEquals(esperado.descripcion(), paso.getDescripcion());
+                assertSame(actividad, paso.getActividad());
+                if (esperado.idArasaac() == null) assertNull(paso.getPictograma());
+                else assertSame(locales.stream().filter(p -> p.getIdArasaac().equals(esperado.idArasaac())).findFirst().orElseThrow(), paso.getPictograma());
+            }
+        }
+        verifyNoInteractions(arasaac); verify(em, times(6)).flush();
+    }
 }
