@@ -8,7 +8,12 @@
     {
       "codigo": "backpack",
       "nombre": "Mochila",
-      "palabras": []
+      "palabras": [
+        "colegio",
+        "escuela",
+        "ir al colegio",
+        "ir a la escuela"
+      ]
     },
     {
       "codigo": "ball",
@@ -26,7 +31,10 @@
       "palabras": [
         "cama",
         "descansar",
-        "dormir"
+        "dormir",
+        "acostarse",
+        "prepararse para dormir",
+        "ir a dormir"
       ]
     },
     {
@@ -42,13 +50,19 @@
         "cenar",
         "desayunar",
         "desayuno",
-        "pan"
+        "pan",
+        "desayunando",
+        "cenando"
       ]
     },
     {
       "codigo": "cereal",
       "nombre": "Cereal",
-      "palabras": []
+      "palabras": [
+        "desayuno",
+        "desayunar",
+        "desayunando"
+      ]
     },
     {
       "codigo": "clean-tooth",
@@ -58,7 +72,14 @@
     {
       "codigo": "coffee",
       "nombre": "Café",
-      "palabras": []
+      "palabras": [
+        "desayuno",
+        "desayunar",
+        "desayunando",
+        "cenar",
+        "cena",
+        "cenando"
+      ]
     },
     {
       "codigo": "cookies",
@@ -75,7 +96,8 @@
       "nombre": "Plato de comida",
       "palabras": [
         "almorzar",
-        "almuerzo"
+        "almuerzo",
+        "almorzando"
       ]
     },
     {
@@ -91,7 +113,11 @@
     {
       "codigo": "food",
       "nombre": "Comida",
-      "palabras": []
+      "palabras": [
+        "almorzar",
+        "almuerzo",
+        "almorzando"
+      ]
     },
     {
       "codigo": "glass-of-water",
@@ -106,17 +132,33 @@
     {
       "codigo": "juice",
       "nombre": "Jugo",
-      "palabras": []
+      "palabras": [
+        "cenar",
+        "cena",
+        "cenando"
+      ]
     },
     {
       "codigo": "laptop",
       "nombre": "Computadora portátil",
-      "palabras": []
+      "palabras": [
+        "estudiar",
+        "estudio",
+        "estudiando",
+        "hacer tarea",
+        "hacer la tarea",
+        "tarea escolar"
+      ]
     },
     {
       "codigo": "night",
       "nombre": "Noche",
-      "palabras": []
+      "palabras": [
+        "prepararse para dormir",
+        "ir a dormir",
+        "acostarse",
+        "dormir"
+      ]
     },
     {
       "codigo": "notebooks",
@@ -126,7 +168,14 @@
     {
       "codigo": "notes",
       "nombre": "Notas",
-      "palabras": []
+      "palabras": [
+        "estudiar",
+        "estudio",
+        "estudiando",
+        "hacer tarea",
+        "hacer la tarea",
+        "tarea escolar"
+      ]
     },
     {
       "codigo": "open-book",
@@ -136,7 +185,15 @@
         "estudiar",
         "estudio",
         "leer",
-        "tarea"
+        "tarea",
+        "estudiando",
+        "escolar",
+        "hacer tarea",
+        "hacer la tarea",
+        "tarea escolar",
+        "escuela",
+        "ir al colegio",
+        "ir a la escuela"
       ]
     },
     {
@@ -167,7 +224,12 @@
     {
       "codigo": "school",
       "nombre": "Escuela",
-      "palabras": []
+      "palabras": [
+        "colegio",
+        "escuela",
+        "ir al colegio",
+        "ir a la escuela"
+      ]
     },
     {
       "codigo": "school-uniform",
@@ -192,7 +254,12 @@
     {
       "codigo": "sleep-mask",
       "nombre": "Antifaz para dormir",
-      "palabras": []
+      "palabras": [
+        "prepararse para dormir",
+        "ir a dormir",
+        "acostarse",
+        "dormir"
+      ]
     },
     {
       "codigo": "snacks",
@@ -202,7 +269,11 @@
     {
       "codigo": "soup",
       "nombre": "Sopa",
-      "palabras": []
+      "palabras": [
+        "almorzar",
+        "almuerzo",
+        "almorzando"
+      ]
     },
     {
       "codigo": "step",
@@ -332,6 +403,84 @@
         "recoger",
         "ordenar"
       ]
+    },
+    {
+      "nombre": "cepillar los dientes",
+      "idArasaac": 2326,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "cuaderno",
+      "idArasaac": 2359,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "dormir",
+      "idArasaac": 2369,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "pijama",
+      "idArasaac": 2522,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "devolver un libro",
+      "idArasaac": 6474,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "libros de ciencias sociales",
+      "idArasaac": 6640,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "meter en la mochila",
+      "idArasaac": 8166,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "atarse las zapatillas",
+      "idArasaac": 17026,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "recoger los platos",
+      "idArasaac": 17298,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "terminar la tarea",
+      "idArasaac": 32814,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "llevar al colegio",
+      "idArasaac": 37036,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "llevar la mochila correctamente",
+      "idArasaac": 37518,
+      "fuente": "ARASAAC",
+      "palabras": []
+    },
+    {
+      "nombre": "esperar la comida",
+      "idArasaac": 38944,
+      "fuente": "ARASAAC",
+      "palabras": []
     }
   ],
   "plantillas": [
@@ -368,6 +517,161 @@
           "orden": 5,
           "descripcion": "Limpia y recoge",
           "pictograma": "arasaac:8688"
+        }
+      ]
+    },
+    {
+      "nombre": "Ir al colegio",
+      "icono": "school",
+      "palabras": [
+        "colegio",
+        "escuela",
+        "ir al colegio",
+        "ir a la escuela"
+      ],
+      "pasos": [
+        {
+          "orden": 1,
+          "descripcion": "Prepara tu mochila",
+          "pictograma": "arasaac:8166"
+        },
+        {
+          "orden": 2,
+          "descripcion": "Ponte los zapatos",
+          "pictograma": "arasaac:17026"
+        },
+        {
+          "orden": 3,
+          "descripcion": "Ponte la mochila",
+          "pictograma": "arasaac:37518"
+        },
+        {
+          "orden": 4,
+          "descripcion": "Ve al colegio",
+          "pictograma": "arasaac:37036"
+        }
+      ]
+    },
+    {
+      "nombre": "Estudiar",
+      "icono": "open-book",
+      "palabras": [
+        "estudiar",
+        "estudio",
+        "estudiando",
+        "hacer tarea",
+        "hacer la tarea",
+        "tarea escolar"
+      ],
+      "pasos": [
+        {
+          "orden": 1,
+          "descripcion": "Prepara tus materiales",
+          "pictograma": "arasaac:6640"
+        },
+        {
+          "orden": 2,
+          "descripcion": "Abre el cuaderno",
+          "pictograma": "arasaac:2359"
+        },
+        {
+          "orden": 3,
+          "descripcion": "Haz la tarea",
+          "pictograma": "arasaac:32814"
+        },
+        {
+          "orden": 4,
+          "descripcion": "Guarda tus materiales",
+          "pictograma": "arasaac:6474"
+        }
+      ]
+    },
+    {
+      "nombre": "Almorzar",
+      "icono": "dish-of-food",
+      "palabras": [
+        "almorzar",
+        "almuerzo",
+        "almorzando"
+      ],
+      "pasos": [
+        {
+          "orden": 1,
+          "descripcion": "Lávate las manos",
+          "pictograma": "arasaac:2443"
+        },
+        {
+          "orden": 2,
+          "descripcion": "Siéntate a la mesa",
+          "pictograma": "arasaac:38944"
+        },
+        {
+          "orden": 3,
+          "descripcion": "Come",
+          "pictograma": "arasaac:2349"
+        },
+        {
+          "orden": 4,
+          "descripcion": "Recoge tu plato",
+          "pictograma": "arasaac:17298"
+        }
+      ]
+    },
+    {
+      "nombre": "Cenar",
+      "icono": "food",
+      "palabras": [
+        "cenar",
+        "cena",
+        "cenando"
+      ],
+      "pasos": [
+        {
+          "orden": 1,
+          "descripcion": "Lávate las manos",
+          "pictograma": "arasaac:2443"
+        },
+        {
+          "orden": 2,
+          "descripcion": "Siéntate a la mesa",
+          "pictograma": "arasaac:38944"
+        },
+        {
+          "orden": 3,
+          "descripcion": "Come",
+          "pictograma": "arasaac:2349"
+        },
+        {
+          "orden": 4,
+          "descripcion": "Recoge tu plato",
+          "pictograma": "arasaac:17298"
+        }
+      ]
+    },
+    {
+      "nombre": "Prepararse para dormir",
+      "icono": "bed",
+      "palabras": [
+        "prepararse para dormir",
+        "ir a dormir",
+        "acostarse",
+        "dormir"
+      ],
+      "pasos": [
+        {
+          "orden": 1,
+          "descripcion": "Ponte el pijama",
+          "pictograma": "arasaac:2522"
+        },
+        {
+          "orden": 2,
+          "descripcion": "Cepíllate los dientes",
+          "pictograma": "arasaac:2326"
+        },
+        {
+          "orden": 3,
+          "descripcion": "Acuéstate",
+          "pictograma": "arasaac:2369"
         }
       ]
     }

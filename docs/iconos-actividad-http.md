@@ -18,7 +18,11 @@ Sin parámetro o con nombre vacío tras normalizar espacios, devuelve todo el
 catálogo ordenado por código. Con uno o dos caracteres devuelve lista vacía.
 Con tres o más, compara sin mayúsculas ni acentos: keyword igual al nombre
 completo, keyword igual a una palabra completa y finalmente prefijo de palabra
-desde dos caracteres. Conserva la mejor prioridad por icono, elimina duplicados,
+desde tres caracteres por palabra. Las palabras de uno o dos caracteres no
+generan coincidencias débiles por prefijo, aunque se conservan las coincidencias
+exactas o por palabra completa legítimas dentro de una consulta válida.
+Así, al de Ir al colegio no coincide con almorzar/almuerzo/almorzando.
+Conserva la mejor prioridad por icono, elimina duplicados,
 desempata por código y limita a tres. Sin coincidencias devuelve `{"iconos":[]}`;
 no rellena con iconos ajenos. No utiliza IA, stemming ni keywords de plantillas.
 
@@ -26,8 +30,25 @@ Nombre de más de 80 caracteres devuelve 400 SOLICITUD_INVALIDA. Los errores de
 sesión e infraestructura mantienen el contrato global seguro. Las consultas son
 de solo lectura y no modifican datos base, actividades ni plantillas.
 
-Con el seed actual, Desayunar sugiere bread; dish-of-food solo tiene las palabras
-almorzar y almuerzo. Los iconos sin keywords siguen disponibles en el catálogo.
+Las variantes de cada plantilla se asocian a estas alternativas, sin ranking
+especial por actividad (orden por relevancia y código):
+
+| Familia de búsqueda | Conjunto principal |
+| --- | --- |
+| Desayunar | bread, cereal, coffee |
+| Prepararse para dormir | bed, night, sleep-mask |
+| Estudiar | laptop, notes, open-book |
+| Ir al colegio | backpack, open-book, school |
+| Cenar | bread, coffee, juice |
+| Almorzar | dish-of-food, food, soup |
+
+Las variantes exactas están en el JSON (por ejemplo desayuno/desayunando,
+colegio/escuela, almuerzo/almorzando, cena/cenando y dormir/acostarse).
+Se conservan otras asociaciones válidas y los 52 iconos. Solo se retiran de food
+las asociaciones cena/cenar/cenando expresamente aprobadas. El icono predeterminado
+de la plantilla Cenar sigue siendo food; no determina las sugerencias. Para una
+BD anterior, la eliminación requiere la [transición explícita](sql/promover-catalogo-seis-rutinas.sql),
+no la sincronización aditiva. Los iconos sin keywords siguen disponibles en el catálogo.
 
 ## Cliente: primer incremento de Nueva actividad
 

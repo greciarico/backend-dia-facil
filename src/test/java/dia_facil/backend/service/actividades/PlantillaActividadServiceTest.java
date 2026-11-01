@@ -14,6 +14,41 @@ class PlantillaActividadServiceTest {
         Paso(Integer orden, String descripcion, Integer id, String nombre) { this(orden, descripcion, id, nombre, null); }
     }
 
+    @Test void lasSeisPlantillasSeEncuentranPorTodasSusVariantesYEntreganPasosOpcionales() {
+        var datos = dia_facil.backend.service.datosbase.LectorDatosBase.leer(tools.jackson.databind.json.JsonMapper.builder().build(),
+            new org.springframework.core.io.ClassPathResource("db/datos-base.json"));
+        var candidatas = new java.util.ArrayList<PlantillaActividadRepository.Candidata>();
+        for (int index = 0; index < datos.plantillas().size(); index++) {
+            var plantilla = datos.plantillas().get(index); int id = index + 100;
+            plantilla.palabras().forEach(p -> candidatas.add(new Candidata(id, plantilla.nombre(), p)));
+            when(repository.pasos(id)).thenReturn(plantilla.pasos().stream().map(p -> {
+                var pic = datos.pictogramas().stream().filter(i -> i.clave().equals(p.pictograma())).findFirst();
+                return (PlantillaActividadRepository.Paso) new Paso(p.orden(), p.descripcion(), pic.isEmpty() ? null : pic.get().idArasaac(),
+                    pic.isEmpty() ? null : pic.get().nombre(), pic.isEmpty() ? null : pic.get().idArasaac());
+            }).toList());
+        }
+        when(repository.candidatas()).thenReturn(candidatas);
+        for (var plantilla : datos.plantillas()) {
+            var consultas = new java.util.ArrayList<>(plantilla.palabras()); consultas.add(plantilla.nombre());
+            for (String consulta : consultas) {
+                var resultado = service.sugerir("  " + consulta.toUpperCase(java.util.Locale.ROOT) + "  ");
+                assertNotNull(resultado, consulta); assertEquals(plantilla.nombre(), resultado.nombre(), consulta);
+                assertEquals(plantilla.pasos().stream().map(p -> p.descripcion()).toList(),
+                    resultado.pasos().stream().map(p -> p.descripcion()).toList());
+                assertEquals(java.util.stream.IntStream.rangeClosed(1, plantilla.pasos().size()).boxed().toList(),
+                    resultado.pasos().stream().map(p -> p.orden()).toList());
+                for (int i = 0; i < plantilla.pasos().size(); i++) {
+                    String referencia = plantilla.pasos().get(i).pictograma(); var pictograma = resultado.pasos().get(i).pictograma();
+                    if (referencia == null) assertNull(pictograma);
+                    else assertEquals(referencia, "arasaac:" + pictograma.idArasaac());
+                }
+            }
+        }
+        for (String ambigua : List.of("comer", "comida", "clases", "tarea")) assertNull(service.sugerir(ambigua), ambigua);
+        assertEquals("Ir al colegio", service.sugerir("ir   a la ESCUÉLA").nombre());
+        assertEquals("Estudiar", service.sugerir("hacer la tarea de hoy").nombre());
+    }
+
     @Test void desayunarEntregaLosCincoPredeterminadosAprobadosConTextosOriginales() {
         var datos = dia_facil.backend.service.datosbase.LectorDatosBase.leer(tools.jackson.databind.json.JsonMapper.builder().build(),
             new org.springframework.core.io.ClassPathResource("db/datos-base.json"));

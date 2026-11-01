@@ -35,7 +35,8 @@ public class IconoActividadService {
     private static int puntuar(String query, String palabra) {
         if (query.equals(palabra)) return 3;
         if (Arrays.asList(query.split(" ")).contains(palabra)) return 2;
-        return Arrays.stream(query.split(" ")).anyMatch(token -> token.length() >= 2 && palabra.startsWith(token)) ? 1 : 0;
+        // Short particles may match whole words, but cannot generate weak prefix matches.
+        return Arrays.stream(query.split(" ")).anyMatch(token -> token.length() >= 3 && palabra.startsWith(token)) ? 1 : 0;
     }
 
     private static String normalizar(String value) {
