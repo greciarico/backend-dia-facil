@@ -1,0 +1,61 @@
+name: Deploy backend a EC2
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Tests aislados + empaquetado
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp clean package "-Dtest=*Test,!BackendApplicationTests" -Dsurefire.failIfNoSpecifiedTests=false
+
+      - name: Preparar SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Subir JAR
+        run: |
+          scp -i ~/.ssh/deploy_key target/backend-0.0.1-SNAPSHOT.jar \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/app.jar.new
+
+      - name: Desplegar con health check y rollback
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'bash -s' << 'EOF'
+          set -e
+          cd /home/ubuntu
+          [ -f app.jar ] && cp app.jar app.jar.prev
+          mv app.jar.new app.jar
+          sudo systemctl restart diafacil
+
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/dispositivos/vinculacion || true)
+            if [ "$code" != "000" ]; then echo "Backend arriba (HTTP $code)"; exit 0; fi
+            sleep 5
+          done
+
+          echo "El backend no arrancó; restaurando versión anterior"
+          sudo journalctl -u diafacil -n 80 --no-pager
+          mv app.jar.prev app.jar
+          sudo systemctl restart diafacil
+          exit 1
+          EOF
