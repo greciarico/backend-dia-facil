@@ -32,11 +32,23 @@ import org.hibernate.type.SqlTypes;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "notificacion_cuidador", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", indexes = {
+@Table(name = "notificacion_cuidador", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", uniqueConstraints = {@jakarta.persistence.UniqueConstraint(name="uq_notif_solicitud",columnNames="id_solicitud_ayuda"), @jakarta.persistence.UniqueConstraint(name="uq_notif_ejecucion",columnNames="id_ejecucion_actividad")}, indexes = {
     @Index(name = "idx_notif_cuidador_fecha", columnList = "id_cuidador,fecha_creacion"),
     @Index(name = "idx_notif_cuidador_leida", columnList = "id_cuidador,leida")
 })
 public class NotificacionCuidador {
+    public static NotificacionCuidador ayuda(SolicitudAyuda s) {
+        var n=new NotificacionCuidador(); n.perfilUsuario=s.getPerfilUsuario(); n.solicitudAyuda=s;
+        n.tipo=s.getActividad()==null?TipoNotificacion.AYUDA_GENERAL:TipoNotificacion.AYUDA_CONTEXTUAL;
+        n.titulo="Solicitud de ayuda";
+        n.mensaje=n.perfilUsuario.getNombre()+" necesita tu ayuda"+(s.getActividad()==null?"":": se quedó atascada en el paso "+s.getPosicionPaso()+" de "+s.getActividad().getNombre()); return n;
+    }
+    public static NotificacionCuidador completada(EjecucionActividad e) {
+        var n=new NotificacionCuidador(); n.perfilUsuario=e.getActividad().getPerfilUsuario(); n.ejecucionActividad=e;
+        n.tipo=TipoNotificacion.ACTIVIDAD_COMPLETADA; n.titulo="Actividad completada";
+        n.mensaje=n.perfilUsuario.getNombre()+" completó: "+e.getActividad().getNombre(); return n;
+    }
+
 
     @Id
     @Setter(AccessLevel.NONE)

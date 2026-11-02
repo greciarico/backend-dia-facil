@@ -62,7 +62,7 @@ class EjecucionUsuarioServiceTest {
         assertThrows(RechazoGuia.class,()->service.finalizarGuiada(principal,7,1,1));
         var result=service.finalizarGuiada(principal,7,1,5);assertEquals("COMPLETADA",result.estado());assertEquals("GUIADA",result.modoFinalizacion());
         assertTrue(actividad.getGuiaInicialCompletada());assertEquals(5,progreso.size());assertTrue(progreso.stream().allMatch(p->p.getCompletado()&&p.getFechaCompletado()!=null));
-        assertEquals(result,service.finalizarGuiada(principal,7,1,5));assertEquals("GUIADA",service.finalizarDirecta(principal,7,fecha).modoFinalizacion());
+        verify(em,times(1)).persist(isA(NotificacionCuidador.class));assertEquals(result,service.finalizarGuiada(principal,7,1,5));assertEquals("GUIADA",service.finalizarDirecta(principal,7,fecha).modoFinalizacion());verify(em,times(1)).persist(isA(NotificacionCuidador.class));
     }
     @Test void cierreAnticipadoPosteriorEsGuiadaYNoInventaProgreso() {
         actividad.setGuiaInicialCompletada(true);start();service.avanzar(principal,7,1,1);

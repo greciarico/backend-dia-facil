@@ -31,11 +31,29 @@ import org.hibernate.generator.EventType;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "token_push", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_token_push", columnNames = {"expo_token"})
+    @UniqueConstraint(name = "uq_token_push", columnNames = {"expo_token"}),
+    @UniqueConstraint(name="uq_token_instalacion",columnNames="id_instalacion")
 }, indexes = {
     @Index(name = "idx_token_cuidador", columnList = "id_cuidador")
 })
 public class TokenPush {
+    public static TokenPush nuevo() { return new TokenPush(); }
+
+    @Column(name="id_instalacion", length=36)
+    private String idInstalacion;
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="id_sesion", foreignKey=@ForeignKey(name="fk_token_sesion"))
+    @OnDelete(action=OnDeleteAction.SET_NULL)
+    private SesionCuidador sesion;
+    @ColumnDefault("0")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.TINYINT)
+    @Column(name="activo", nullable=false)
+    private boolean activo;
+    @ColumnDefault("1")
+    @Column(name="generacion", nullable=false)
+    private long generacion=1;
+    @Column(name="proyecto_eas", length=36)
+    private String proyectoEas;
 
     @Id
     @Setter(AccessLevel.NONE)

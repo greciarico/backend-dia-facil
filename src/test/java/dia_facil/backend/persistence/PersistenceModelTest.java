@@ -82,6 +82,8 @@ class PersistenceModelTest {
         SolicitudAyuda.class,
         NotificacionCuidador.class,
         TokenPush.class,
+        dia_facil.backend.persistence.entity.ControlRegistroPush.class,
+        dia_facil.backend.persistence.entity.EntregaPush.class,
         dia_facil.backend.persistence.entity.SesionCuidador.class,
         dia_facil.backend.persistence.entity.CredencialSesionCuidador.class
     );
@@ -136,7 +138,7 @@ class PersistenceModelTest {
 
     @Test
     void tablesColumnsPrimaryKeysAndTypesMatchReference() {
-        assertEquals(23, tables.size());
+        assertEquals(25, tables.size());
         assertEquals(rows("T").stream().map(row -> row[1]).collect(Collectors.toSet()), tables.keySet());
         for (var row : rows("T")) {
             var table = tables.get(row[1]);
@@ -328,10 +330,20 @@ class PersistenceModelTest {
     }
 
     @Test
+    void hashLengthsMatchExistingBinary32Columns() {
+        for (String table : List.of("credencial_dispositivo", "credencial_sesion_cuidador")) {
+            var hashes = tables.get(table).getColumns().stream()
+                .filter(column -> column.getName().endsWith("_hash")).toList();
+            assertFalse(hashes.isEmpty());
+            for (var column : hashes) assertEquals(Long.valueOf(32), column.getLength(), table + "." + column.getName());
+        }
+    }
+
+    @Test
     void schemaContainsOnlyDdlAndTableStorageOptions() {
-        assertEquals(23, Pattern.compile("create table ").matcher(ddl).results().count());
-        assertEquals(23, Pattern.compile("engine=innodb").matcher(ddl).results().count());
-        assertEquals(23, Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
+        assertEquals(ENTITIES.size(), Pattern.compile("create table ").matcher(ddl).results().count());
+        assertEquals(ENTITIES.size(), Pattern.compile("engine=innodb").matcher(ddl).results().count());
+        assertEquals(ENTITIES.size(), Pattern.compile("collate=utf8mb4_unicode_ci").matcher(ddl).results().count());
         assertFalse(ddl.contains("create trigger"));
         assertFalse(ddl.contains("insert into"));
         assertEquals(0, RejectConnections.attempts.get());
