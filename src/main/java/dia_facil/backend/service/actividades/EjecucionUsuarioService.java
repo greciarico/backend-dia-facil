@@ -15,6 +15,10 @@ import org.springframework.transaction.annotation.*;
 @Service
 @ConditionalOnProperty(name="diafacil.dispositivos.enabled",havingValue="true")
 public class EjecucionUsuarioService {
+    private dia_facil.backend.service.push.NotificacionEventoService eventos;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setEventos(dia_facil.backend.service.push.NotificacionEventoService eventos){this.eventos=eventos;}
+    private void registrarNotificacion(NotificacionCuidador n){if(eventos!=null)eventos.registrarNotificacion(n);else em.persist(n);}
     private final EntityManager em;
     private final AccesoDispositivoService acceso;
     private final Clock clock;
@@ -123,5 +127,5 @@ public class EjecucionUsuarioService {
     private Finalizacion finalizacion(EjecucionActividad e){return new Finalizacion(e.getFecha(),e.getIdEjecucionActividad(),e.getEstado().name(),e.getModoFinalizacion().name(),info(e.getActividad()));}
     private void dia(Contexto c,LocalDate fecha){if(!c.ahora().toLocalDate().equals(fecha))throw RechazoGuia.dia();}
     private void completar(ProgresoPaso p,Contexto c){if(p==null)throw RechazoGuia.paso();if(!Boolean.TRUE.equals(p.getCompletado())){p.setCompletado(true);p.setFechaCompletado(c.ahora().toLocalDateTime());}}
-    private void cerrar(Contexto c,EjecucionActividad e,ModoFinalizacion modo){e.setEstado(EstadoEjecucion.COMPLETADA);e.setModoFinalizacion(modo);e.setFechaFin(c.ahora().toLocalDateTime());}
+    private void cerrar(Contexto c,EjecucionActividad e,ModoFinalizacion modo){e.setEstado(EstadoEjecucion.COMPLETADA);e.setModoFinalizacion(modo);e.setFechaFin(c.ahora().toLocalDateTime());registrarNotificacion(NotificacionCuidador.completada(e));}
 }

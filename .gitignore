@@ -33,3 +33,23 @@ build/
 .vscode/
 ### Local Spring configuration ###
 application-local.properties
+
+# Private environment files; retain sanitized templates
+.env
+.env.*
+!.env.example
+!.env.*.example
+!*.example.env
+
+# Private service credentials and alternate local profiles
+/credentials/
+/credentials.json
+/google-services.json
+/*firebase-adminsdk*.json
+/*service-account*.json
+*.pem
+*.key
+*.p12
+*.jks
+/application-*.properties
+!/application-*.example.properties
