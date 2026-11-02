@@ -29,11 +29,21 @@ import org.hibernate.generator.EventType;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "solicitud_ayuda", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", indexes = {
+@Table(name = "solicitud_ayuda", options = "DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", uniqueConstraints = @jakarta.persistence.UniqueConstraint(name="uq_ayuda_perfil_operacion", columnNames={"id_perfil_usuario","clave_operacion"}), indexes = {
+    @Index(name="idx_ayuda_contexto",columnList="id_perfil_usuario,id_ejecucion_actividad,id_paso_actividad,fecha_solicitud"),
     @Index(name = "idx_ayuda_perfil_estado", columnList = "id_perfil_usuario,estado,fecha_solicitud"),
     @Index(name = "idx_ayuda_actividad", columnList = "id_actividad,fecha_solicitud")
 })
 public class SolicitudAyuda {
+    public static SolicitudAyuda crear(PerfilUsuario perfil, String clave, Actividad actividad, EjecucionActividad ejecucion, PasoActividad paso, Integer posicion) {
+        var s=new SolicitudAyuda(); s.perfilUsuario=perfil; s.claveOperacion=clave; s.actividad=actividad;
+        s.ejecucionActividad=ejecucion; s.pasoActividad=paso; s.posicionPaso=posicion;
+        s.descripcionPaso=paso==null?null:paso.getDescripcion(); return s;
+    }
+    @Column(name="clave_operacion", length=36) private String claveOperacion;
+    @Column(name="posicion_paso") private Integer posicionPaso;
+    @Column(name="descripcion_paso", length=120) private String descripcionPaso;
+
 
     @Id
     @Setter(AccessLevel.NONE)

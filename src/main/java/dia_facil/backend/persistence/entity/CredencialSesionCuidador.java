@@ -19,8 +19,8 @@ public class CredencialSesionCuidador {
     @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.RESTRICT)
     @JoinColumn(name = "id_sesion", nullable = false, foreignKey = @ForeignKey(name = "fk_credencial_sesion")) private SesionCuidador sesion;
     @Column(name = "generacion", nullable = false) private Integer generacion;
-    @Column(name = "access_hash", nullable = false, columnDefinition = "binary(32)") private byte[] accessHash;
-    @Column(name = "refresh_hash", nullable = false, columnDefinition = "binary(32)") private byte[] refreshHash;
+    @Column(name = "access_hash", nullable = false, length = 32, columnDefinition = "binary(32)") private byte[] accessHash;
+    @Column(name = "refresh_hash", nullable = false, length = 32, columnDefinition = "binary(32)") private byte[] refreshHash;
     @Column(name = "access_hasta", nullable = false, secondPrecision = 6) private LocalDateTime accessHasta;
     @Column(name = "consumida_en", secondPrecision = 6) private LocalDateTime consumidaEn;
     public static CredencialSesionCuidador crear(SesionCuidador sesion, int generacion, byte[] access, byte[] refresh, LocalDateTime venceAccess) {

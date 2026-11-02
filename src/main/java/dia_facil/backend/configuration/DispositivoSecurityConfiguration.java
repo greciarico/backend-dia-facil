@@ -39,6 +39,8 @@ public class DispositivoSecurityConfiguration {
         var iniciar = paths.matcher(HttpMethod.POST,"/api/usuario/actividades/{actividad}/guia");
         var avanzar = paths.matcher(HttpMethod.PUT,"/api/usuario/actividades/{actividad}/ejecuciones/{ejecucion}/pasos/{paso}/completar");
         var guiada = paths.matcher(HttpMethod.POST,"/api/usuario/actividades/{actividad}/ejecuciones/{ejecucion}/finalizar-guiada");
+        var ayuda = paths.matcher(HttpMethod.POST,"/api/usuario/solicitudes-ayuda");
+        var recuperarAyuda = paths.matcher(HttpMethod.GET,"/api/usuario/solicitudes-ayuda/por-clave/{clave}");
         var directa = paths.matcher(HttpMethod.POST,"/api/usuario/actividades/{actividad}/finalizar-directa");
         var limit = new LimiteVinculacion(Clock.systemUTC(), env.getProperty("diafacil.dispositivos.limite.minuto", Integer.class, 10),
             env.getProperty("diafacil.dispositivos.limite.hora", Integer.class, 60), env.getProperty("diafacil.dispositivos.limite.global", Integer.class, 300));
@@ -74,8 +76,8 @@ public class DispositivoSecurityConfiguration {
             .authorizeHttpRequests(auth -> auth.requestMatchers(prepare).permitAll()
                 .requestMatchers(bind, current).hasAnyRole("VINCULACION_PENDIENTE", "USUARIO")
                 .requestMatchers(leave).hasRole("VINCULACION_PENDIENTE")
-                .requestMatchers(agenda, accesibilidad, detalle, guia, ejecucion, iniciar, avanzar, guiada, directa).hasRole("USUARIO").anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(prepare, bind, leave, iniciar, avanzar, guiada, directa))
+                .requestMatchers(agenda, accesibilidad, detalle, guia, ejecucion, iniciar, avanzar, guiada, directa, ayuda, recuperarAyuda).hasRole("USUARIO").anyRequest().denyAll())
+            .csrf(csrf -> csrf.ignoringRequestMatchers(prepare, bind, leave, iniciar, avanzar, guiada, directa, ayuda))
             .addFilterBefore(filtro, AnonymousAuthenticationFilter.class)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .requestCache(c -> c.disable()).formLogin(c -> c.disable()).httpBasic(c -> c.disable()).logout(c -> c.disable())

@@ -12,7 +12,7 @@ import lombok.*;
 public class CredencialDispositivo {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_credencial_dispositivo", nullable = false) private Long idCredencialDispositivo;
-    @Column(name = "token_hash", nullable = false, columnDefinition = "binary(32)") private byte[] tokenHash;
+    @Column(name = "token_hash", nullable = false, length = 32, columnDefinition = "binary(32)") private byte[] tokenHash;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_dispositivo", foreignKey = @ForeignKey(name = "fk_credencial_dispositivo"))
     @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
