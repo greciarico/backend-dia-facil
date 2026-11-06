@@ -30,10 +30,13 @@ build/
 !**/src/test/**/build/
 
 ### VS Code ###
+.vscode/
 ### Local Spring configuration ###
 application-local.properties
 
 # Private environment files; retain sanitized templates
+.env
+.env.*
 !.env.example
 !.env.*.example
 !*.example.env
@@ -50,5 +53,3 @@ application-local.properties
 *.jks
 /application-*.properties
 !/application-*.example.properties
-config.bat
-node_modules
