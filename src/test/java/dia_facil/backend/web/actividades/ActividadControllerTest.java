@@ -69,7 +69,7 @@ class ActividadControllerTest {
         }
         verifyNoInteractions(actividades);
         mvc.perform(post("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/perfiles/12/actividades/extra").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/perfiles/12/actividades/extra/no-disponible").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
     }
 
     @Test void formatoInvalidoYFalloDeBdMantienenErroresSeguros() throws Exception {

@@ -42,7 +42,7 @@ import org.hibernate.generator.EventType;
 })
 public class EjecucionActividad {
     public static EjecucionActividad iniciar(Actividad actividad, LocalDate fecha) {
-        var ejecucion = new EjecucionActividad(); ejecucion.actividad = actividad; ejecucion.fecha = fecha; return ejecucion;
+        var ejecucion = new EjecucionActividad(); ejecucion.actividad = actividad; ejecucion.fecha = fecha; ejecucion.revision = actividad.getRevision(); return ejecucion;
     }
 
     @Id
@@ -55,6 +55,10 @@ public class EjecucionActividad {
     @JoinColumn(name = "id_actividad", nullable = false, foreignKey = @ForeignKey(name = "fk_ejecucion_actividad"))
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Actividad actividad;
+
+    @ColumnDefault("1")
+    @Column(name = "revision", nullable = false)
+    private int revision = 1;
 
     @Column(name = "fecha", nullable = false)
     private LocalDate fecha;

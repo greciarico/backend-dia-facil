@@ -40,7 +40,10 @@ public class NotificacionCuidadorService {
     private Notificacion dto(NotificacionCuidador n){
         var s=n.getSolicitudAyuda();var e=n.getEjecucionActividad()!=null?n.getEjecucionActividad():s==null?null:s.getEjecucionActividad();
         var a=e!=null?e.getActividad():s==null?null:s.getActividad();
-        return new Notificacion(n.getIdNotificacionCuidador(),n.getTipo().name(),n.getTitulo(),n.getMensaje(),n.getFechaCreacion().atZone(java.time.ZoneId.of("America/Lima")).toOffsetDateTime(),Boolean.TRUE.equals(n.getLeida()),n.getPerfilUsuario().getNombre(),a==null||a.getIconoActividad()==null?null:a.getIconoActividad().getCodigo(),s==null?null:s.getIdSolicitudAyuda(),e==null?null:e.getIdEjecucionActividad());
+        var ejecucion = e != null ? e : s == null ? null : s.getEjecucionActividad();
+        var icono = ejecucion != null ? dia_facil.backend.persistence.entity.VersionActividad.deEjecucion(em, ejecucion).getIcono()
+            : a == null ? null : a.getIconoActividad();
+        return new Notificacion(n.getIdNotificacionCuidador(),n.getTipo().name(),n.getTitulo(),n.getMensaje(),n.getFechaCreacion().atZone(java.time.ZoneId.of("America/Lima")).toOffsetDateTime(),Boolean.TRUE.equals(n.getLeida()),n.getPerfilUsuario().getNombre(),icono==null?null:icono.getCodigo(),s==null?null:s.getIdSolicitudAyuda(),e==null?null:e.getIdEjecucionActividad());
     }
     private static String codificar(Cursor c){return Base64.getUrlEncoder().withoutPadding().encodeToString((c.cuidador()+"|"+c.categoria()+"|"+c.fecha()+"|"+c.id()).getBytes(StandardCharsets.UTF_8));}
     private static Cursor decodificar(String raw,int cuidador,String categoria){try{

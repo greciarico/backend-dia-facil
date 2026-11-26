@@ -115,6 +115,8 @@ de pruebas no configurado: falló al intentar arrancar y quedó fuera de la ejec
 aislada final; no se modificó para ocultar ese requisito. Sin prueba en MySQL real
 ni Android físico en este entorno.
 
+La consulta del detalle y el guardado de una actividad existente se documentan en [DF-09](editar-actividad.md).
+
 ## Capacidad de la rutina (DF-08)
 
 El GET devuelve todas las actividades activas. El POST admite hasta diez activas por perfil y devuelve HTTP 409 `LIMITE_ACTIVIDADES_ALCANZADO` al alcanzar o superar el máximo. Se cuentan las definiciones activas, incluidas las ya completadas hoy. El bloqueo de perfil y el conteo ocurren dentro de la transacción de alta.

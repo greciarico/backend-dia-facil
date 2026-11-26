@@ -28,6 +28,19 @@ public class CreacionActividadTransaccionalService {
         if (actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(perfilId, EstadoActividad.ACTIVA)
                 >= LimitesActividad.MAXIMO_ACTIVIDADES_ACTIVAS) throw RechazoActividad.limite();
         var icono = iconos.findByCodigo(datos.codigoIcono()).orElseThrow(RechazoActividad::icono);
+        var locales = resolverLocales(datos, metadata);
+        var actividad = Actividad.crear(perfil, datos.nombre(), datos.horaLocal(), icono);
+        em.persist(actividad);
+        em.persist(VersionActividad.de(actividad));
+        for (int i = 0; i < datos.pasos().size(); i++) {
+            var paso = datos.pasos().get(i);
+            em.persist(PasoActividad.crear(actividad, i + 1, paso.descripcion(), locales.get(paso.idArasaac())));
+        }
+        em.flush();
+        return new ActividadResumen(actividad.getIdActividad(), actividad.getNombre(), datos.hora(), icono.getCodigo());
+    }
+
+    Map<Integer, Pictograma> resolverLocales(CrearActividad datos, Map<Integer, PictogramaArasaac> metadata) {
         var ids = datos.pasos().stream().map(CrearActividad.Paso::idArasaac).filter(Objects::nonNull).distinct().sorted().toList();
         var locales = new HashMap<Integer, Pictograma>();
         if (!ids.isEmpty()) pictogramas.findByIdArasaacIn(ids).forEach(p -> locales.put(p.getIdArasaac(), p));
@@ -38,13 +51,6 @@ public class CreacionActividadTransaccionalService {
             var nuevo = Pictograma.crearArasaac(externo.nombre(), id);
             em.persist(nuevo); locales.put(id, nuevo);
         }
-        var actividad = Actividad.crear(perfil, datos.nombre(), datos.horaLocal(), icono);
-        em.persist(actividad);
-        for (int i = 0; i < datos.pasos().size(); i++) {
-            var paso = datos.pasos().get(i);
-            em.persist(PasoActividad.crear(actividad, i + 1, paso.descripcion(), locales.get(paso.idArasaac())));
-        }
-        em.flush();
-        return new ActividadResumen(actividad.getIdActividad(), actividad.getNombre(), datos.hora(), icono.getCodigo());
+        return locales;
     }
 }

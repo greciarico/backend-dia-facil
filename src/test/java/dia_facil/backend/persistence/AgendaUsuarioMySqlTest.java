@@ -42,6 +42,7 @@ class AgendaUsuarioMySqlTest {
                 em.persist(Actividad.crear(other,"Other profile",LocalTime.of(6,0),null));
                 var today=LocalDate.of(2026,10,24);
                 for(var item:List.of(historical,inProgress,complete)) {
+                    em.persist(VersionActividad.de(item));
                     var execution=BeanUtils.instantiateClass(EjecucionActividad.class.getDeclaredConstructor());
                     execution.setActividad(item);execution.setFecha(item==historical?today.minusDays(1):today);
                     if(item!=inProgress){execution.setEstado(EstadoEjecucion.COMPLETADA);execution.setModoFinalizacion(ModoFinalizacion.DIRECTA);execution.setFechaFin(LocalDateTime.of(2026,10,24,12,0));}
@@ -60,6 +61,21 @@ class AgendaUsuarioMySqlTest {
                 assertEquals("COMPLETADA",repo.detalleUsuario(complete.getIdActividad(),profile.getIdPerfilUsuario(),today,EstadoPerfil.ACTIVO,EstadoActividad.ACTIVA).orElseThrow().estado());
                 assertTrue(repo.detalleUsuario(pending.getIdActividad(),other.getIdPerfilUsuario(),today,EstadoPerfil.ACTIVO,EstadoActividad.ACTIVA).isEmpty());
                 assertTrue(repo.detalleUsuario(inactive.getIdActividad(),profile.getIdPerfilUsuario(),today,EstadoPerfil.ACTIVO,EstadoActividad.ACTIVA).isEmpty());
+                inProgress.setRevision(2);
+                inProgress.setNombre("Versión nueva");
+                inProgress.setHora(LocalTime.of(20, 0));
+                em.persist(VersionActividad.de(inProgress));
+                em.flush();
+                var hoy = repo.detalleUsuario(inProgress.getIdActividad(), profile.getIdPerfilUsuario(), today,
+                    EstadoPerfil.ACTIVO, EstadoActividad.ACTIVA).orElseThrow();
+                assertEquals("In progress", hoy.nombre());
+                assertEquals("07:00", hoy.hora());
+                assertEquals("EN_PROGRESO", hoy.estado());
+                var siguiente = repo.detalleUsuario(inProgress.getIdActividad(), profile.getIdPerfilUsuario(), today.plusDays(1),
+                    EstadoPerfil.ACTIVO, EstadoActividad.ACTIVA).orElseThrow();
+                assertEquals("Versión nueva", siguiente.nombre());
+                assertEquals("20:00", siguiente.hora());
+                assertEquals("PENDIENTE", siguiente.estado());
                 profile.setEstado(EstadoPerfil.INACTIVO);em.flush();
                 assertTrue(repo.agenda(profile.getIdPerfilUsuario(),today,EstadoPerfil.ACTIVO,EstadoActividad.ACTIVA).isEmpty());
                 assertTrue(repo.detalleUsuario(pending.getIdActividad(),profile.getIdPerfilUsuario(),today,EstadoPerfil.ACTIVO,EstadoActividad.ACTIVA).isEmpty());

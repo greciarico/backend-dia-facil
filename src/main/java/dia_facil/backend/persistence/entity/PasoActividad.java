@@ -31,7 +31,7 @@ import org.hibernate.type.SqlTypes;
 public class PasoActividad {
     public static PasoActividad crear(Actividad actividad, Integer orden, String descripcion, Pictograma pictograma) {
         var paso = new PasoActividad(); paso.actividad = actividad; paso.orden = orden;
-        paso.descripcion = descripcion; paso.pictograma = pictograma; return paso;
+        paso.revision = actividad.getRevision(); paso.descripcion = descripcion; paso.pictograma = pictograma; return paso;
     }
 
     @Id
@@ -49,6 +49,10 @@ public class PasoActividad {
     @JoinColumn(name = "id_pictograma", nullable = true, foreignKey = @ForeignKey(name = "fk_paso_pictograma"))
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private Pictograma pictograma;
+
+    @ColumnDefault("1")
+    @Column(name = "revision", nullable = false)
+    private int revision = 1;
 
     @Column(name = "orden", nullable = false, columnDefinition = "smallint unsigned")
     private Integer orden;

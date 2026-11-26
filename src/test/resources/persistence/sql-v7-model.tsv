@@ -78,6 +78,7 @@ T	actividad	Actividad	id_actividad
 C	actividad	id_actividad	INT	false	-	true	false
 C	actividad	id_perfil_usuario	INT	false	-	false	false
 C	actividad	id_icono_actividad	INT	true	-	false	false
+C	actividad	revision	INT	false	1	false	false
 C	actividad	nombre	VARCHAR(80)	false	-	false	false
 C	actividad	hora	TIME	false	-	false	false
 C	actividad	guia_inicial_completada	TINYINT(1)	false	0	false	false
@@ -86,10 +87,21 @@ C	actividad	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
 F	actividad	fk_actividad_perfil	id_perfil_usuario	perfil_usuario	id_perfil_usuario	CASCADE
 F	actividad	fk_actividad_icono	id_icono_actividad	icono_actividad	id_icono_actividad	SET NULL
 I	actividad	idx_actividad_agenda	id_perfil_usuario,estado,hora
+T	version_actividad	VersionActividad	id
+C	version_actividad	id	INT	false	-	true	false
+C	version_actividad	id_actividad	INT	false	-	false	false
+C	version_actividad	numero	INT	false	-	false	false
+C	version_actividad	nombre	VARCHAR(80)	false	-	false	false
+C	version_actividad	hora	TIME	false	-	false	false
+C	version_actividad	id_icono_actividad	INT	true	-	false	false
+F	version_actividad	fk_version_actividad	id_actividad	actividad	id_actividad	CASCADE
+F	version_actividad	fk_version_icono	id_icono_actividad	icono_actividad	id_icono_actividad	SET NULL
+U	version_actividad	uq_version_actividad_numero	id_actividad,numero
 T	paso_actividad	PasoActividad	id_paso_actividad
 C	paso_actividad	id_paso_actividad	INT	false	-	true	false
 C	paso_actividad	id_actividad	INT	false	-	false	false
 C	paso_actividad	id_pictograma	INT	true	-	false	false
+C	paso_actividad	revision	INT	false	1	false	false
 C	paso_actividad	orden	SMALLINT UNSIGNED	false	-	false	false
 C	paso_actividad	descripcion	VARCHAR(120)	false	-	false	false
 C	paso_actividad	activo	TINYINT(1)	false	1	false	false
@@ -109,6 +121,7 @@ I	dispositivo	idx_dispositivo_perfil_estado	id_perfil_usuario,estado
 T	ejecucion_actividad	EjecucionActividad	id_ejecucion_actividad
 C	ejecucion_actividad	id_ejecucion_actividad	INT	false	-	true	false
 C	ejecucion_actividad	id_actividad	INT	false	-	false	false
+C	ejecucion_actividad	revision	INT	false	1	false	false
 C	ejecucion_actividad	fecha	DATE	false	-	false	false
 C	ejecucion_actividad	estado	ENUM( 'EN_PROGRESO', 'COMPLETADA' )	false	'EN_PROGRESO'	false	false
 C	ejecucion_actividad	modo_finalizacion	ENUM( 'GUIADA', 'DIRECTA' )	true	-	false	false

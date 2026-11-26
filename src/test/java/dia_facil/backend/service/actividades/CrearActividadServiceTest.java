@@ -100,11 +100,11 @@ class CrearActividadServiceTest {
         var service = new CreacionActividadTransaccionalService(perfiles,iconos,pictos,em,mock(ActividadRepository.class));
         var entrada = new CrearActividad("Desayuno","07:00","bread",List.of(new CrearActividad.Paso("Primero",123),new CrearActividad.Paso("Segundo",null))).validado();
         var resultado = service.crear(3,12,entrada,Map.of(123,PictogramaArasaac.de(123,"Oficial")));
-        assertEquals(27,resultado.idActividad()); assertEquals(4,escrituras.size());
+        assertEquals(27,resultado.idActividad()); assertEquals(5,escrituras.size());
         var pic = (Pictograma)escrituras.get(0); assertEquals("ARASAAC",pic.getFuente()); assertNull(pic.getUrlImagen());
         var actividad = (Actividad)escrituras.get(1); assertSame(perfil,actividad.getPerfilUsuario()); assertEquals(EstadoActividad.ACTIVA,actividad.getEstado()); assertFalse(actividad.getGuiaInicialCompletada());
-        for (int i=0;i<2;i++) { var paso=(PasoActividad)escrituras.get(i+2); assertEquals(i+1,paso.getOrden()); assertTrue(paso.getActivo()); assertSame(actividad,paso.getActividad()); }
-        assertSame(pic,((PasoActividad)escrituras.get(2)).getPictograma()); assertNull(((PasoActividad)escrituras.get(3)).getPictograma()); verify(em).flush();
+        for (int i=0;i<2;i++) { var paso=(PasoActividad)escrituras.get(i+3); assertEquals(i+1,paso.getOrden()); assertTrue(paso.getActivo()); assertSame(actividad,paso.getActividad()); }
+        assertSame(pic,((PasoActividad)escrituras.get(3)).getPictograma()); assertNull(((PasoActividad)escrituras.get(4)).getPictograma()); verify(em).flush();
     }
     @Test void creaLasSeisRutinasConPasosPropiosYPictogramasOpcionalesSinConsultarArasaac() {
         var base = dia_facil.backend.service.datosbase.LectorDatosBase.leer(tools.jackson.databind.json.JsonMapper.builder().build(),
@@ -130,10 +130,10 @@ class CrearActividadServiceTest {
             var entrada = new CrearActividad(plantilla.nombre(), "08:00", plantilla.icono(), plantilla.pasos().stream()
                 .map(p -> new CrearActividad.Paso(p.descripcion(), p.pictograma() == null ? null : Integer.valueOf(p.pictograma().substring(8)))).toList());
             var resultado = servicio.crear(3, 12, entrada);
-            assertEquals(plantilla.nombre(), resultado.nombre()); assertEquals(plantilla.pasos().size() + 1, escrituras.size());
+            assertEquals(plantilla.nombre(), resultado.nombre()); assertEquals(plantilla.pasos().size() + 2, escrituras.size());
             var actividad = (Actividad) escrituras.getFirst(); assertSame(perfil, actividad.getPerfilUsuario());
             for (int i = 0; i < plantilla.pasos().size(); i++) {
-                var paso = (PasoActividad) escrituras.get(i + 1); var esperado = entrada.pasos().get(i);
+                var paso = (PasoActividad) escrituras.get(i + 2); var esperado = entrada.pasos().get(i);
                 assertEquals(i + 1, paso.getOrden()); assertEquals(esperado.descripcion(), paso.getDescripcion());
                 assertSame(actividad, paso.getActividad());
                 if (esperado.idArasaac() == null) assertNull(paso.getPictograma());

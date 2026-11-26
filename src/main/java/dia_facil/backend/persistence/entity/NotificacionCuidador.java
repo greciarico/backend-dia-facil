@@ -37,16 +37,18 @@ import org.hibernate.type.SqlTypes;
     @Index(name = "idx_notif_cuidador_leida", columnList = "id_cuidador,leida")
 })
 public class NotificacionCuidador {
-    public static NotificacionCuidador ayuda(SolicitudAyuda s) {
+    public static NotificacionCuidador ayuda(SolicitudAyuda s) { return ayuda(s, s.getActividad()==null?null:s.getActividad().getNombre()); }
+    public static NotificacionCuidador ayuda(SolicitudAyuda s, String nombreActividad) {
         var n=new NotificacionCuidador(); n.perfilUsuario=s.getPerfilUsuario(); n.solicitudAyuda=s;
         n.tipo=s.getActividad()==null?TipoNotificacion.AYUDA_GENERAL:TipoNotificacion.AYUDA_CONTEXTUAL;
         n.titulo="Solicitud de ayuda";
-        n.mensaje=n.perfilUsuario.getNombre()+" necesita tu ayuda"+(s.getActividad()==null?"":": se quedó atascada en el paso "+s.getPosicionPaso()+" de "+s.getActividad().getNombre()); return n;
+        n.mensaje=n.perfilUsuario.getNombre()+" necesita tu ayuda"+(s.getActividad()==null?"":": se quedó atascada en el paso "+s.getPosicionPaso()+" de "+nombreActividad); return n;
     }
-    public static NotificacionCuidador completada(EjecucionActividad e) {
+    public static NotificacionCuidador completada(EjecucionActividad e) { return completada(e, e.getActividad().getNombre()); }
+    public static NotificacionCuidador completada(EjecucionActividad e, String nombreActividad) {
         var n=new NotificacionCuidador(); n.perfilUsuario=e.getActividad().getPerfilUsuario(); n.ejecucionActividad=e;
         n.tipo=TipoNotificacion.ACTIVIDAD_COMPLETADA; n.titulo="Actividad completada";
-        n.mensaje=n.perfilUsuario.getNombre()+" completó: "+e.getActividad().getNombre(); return n;
+        n.mensaje=n.perfilUsuario.getNombre()+" completó: "+nombreActividad; return n;
     }
 
 

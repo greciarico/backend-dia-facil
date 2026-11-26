@@ -59,12 +59,13 @@ class CreacionActividadMySqlTest {
                 assertEquals(0L,afterRollback);
                 assertTrue(pictos.findByIdArasaacIn(List.of(arasaac)).isEmpty());
                 var remote=mock(PictogramaArasaacService.class); when(remote.resolver(arasaac)).thenReturn(PictogramaArasaac.de(arasaac,"Test"));
-                var service=new CrearActividadService(new PerfilUsuarioService(profiles),icons,pictos,remote,
-                    proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,em,actividades),manager));
+                var transacciones = proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,em,actividades),manager);
+                var service=new CrearActividadService(new PerfilUsuarioService(profiles),icons,pictos,remote,transacciones);
                 var start=new CountDownLatch(1);
                 Callable<ActividadResumen> create=()->{assertTrue(start.await(10,TimeUnit.SECONDS));return service.crear(ids.get(0),ids.get(1),data);};
                 var a=pool.submit(create);var b=pool.submit(create);start.countDown();
-                assertNotEquals(a.get(30,TimeUnit.SECONDS).idActividad(),b.get(30,TimeUnit.SECONDS).idActividad());
+                var primera = a.get(30,TimeUnit.SECONDS);
+                assertNotEquals(primera.idActividad(),b.get(30,TimeUnit.SECONDS).idActividad());
                 assertEquals(1,pictos.findByIdArasaacIn(List.of(arasaac)).size());
                 long activities=tx.execute(status->em.createQuery("select count(a) from Actividad a where a.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
                 long steps=tx.execute(status->em.createQuery("select count(p) from PasoActividad p where p.actividad.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
@@ -94,6 +95,25 @@ class CreacionActividadMySqlTest {
                 long activas = tx.execute(status ->
                     actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(ids.get(1), EstadoActividad.ACTIVA));
                 assertEquals(10L, activas);
+                var edicion = new EdicionActividadService(em, profiles, icons, service, transacciones, manager,
+                    java.time.Clock.system(java.time.ZoneId.of("America/Lima")));
+                var empezarEdicion = new CountDownLatch(1);
+                java.util.function.Function<String, Callable<String>> editar = nombre -> () -> {
+                    assertTrue(empezarEdicion.await(10, TimeUnit.SECONDS));
+                    var entrada = new EdicionActividadService.Entrada(1, nombre, "09:00", code,
+                        List.of(new EdicionActividadService.PasoEntrada("Paso editado", null, null)));
+                    try { edicion.editar(ids.get(0), ids.get(1), primera.idActividad(), entrada); return "ACTUALIZADA"; }
+                    catch (RechazoActividad error) { return error.codigo(); }
+                };
+                var editarA = pool.submit(editar.apply("Edición A"));
+                var editarB = pool.submit(editar.apply("Edición B"));
+                empezarEdicion.countDown();
+                assertEquals(Set.of("ACTUALIZADA", "ACTIVIDAD_MODIFICADA"),
+                    new HashSet<>(List.of(editarA.get(30, TimeUnit.SECONDS), editarB.get(30, TimeUnit.SECONDS))));
+                var vigente = tx.execute(status -> edicion.consultar(ids.get(0), ids.get(1), primera.idActividad()));
+                assertEquals(2, vigente.revision());
+                assertEquals("09:00", vigente.hora());
+                assertEquals(1, vigente.pasos().size());
             } finally {
                 pool.shutdownNow(); assertTrue(pool.awaitTermination(30,TimeUnit.SECONDS));
                 tx.executeWithoutResult(status->{
