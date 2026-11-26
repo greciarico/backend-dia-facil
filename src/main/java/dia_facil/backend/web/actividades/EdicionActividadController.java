@@ -20,6 +20,14 @@ public class EdicionActividadController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.consultar(identidad.cuidador().idCuidador(), perfil, actividad));
     }
 
+    @DeleteMapping
+    public ResponseEntity<EdicionActividadService.Eliminacion> eliminar(@AuthenticationPrincipal Identidad identidad,
+            @PathVariable("perfil") Integer perfil, @PathVariable("actividad") Integer actividad,
+            @RequestParam("revision") int revision) {
+        if (identidad == null) throw new SesionInvalidada(false);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.eliminar(identidad.cuidador().idCuidador(), perfil, actividad, revision));
+    }
+
     @PutMapping
     public ResponseEntity<EdicionActividadService.Detalle> editar(@AuthenticationPrincipal Identidad identidad,
             @PathVariable("perfil") Integer perfil, @PathVariable("actividad") Integer actividad,

@@ -14,6 +14,35 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class EdicionActividadServiceTest {
+    @Test void soloBorraFisicamenteSinEjecucionesProgresoNiAyuda() {
+        for (boolean tieneAyuda : List.of(false, true)) {
+            var em = mock(EntityManager.class);
+            var perfiles = mock(PerfilUsuarioRepository.class);
+            var perfil = mock(PerfilUsuario.class);
+            var actividad = Actividad.crear(perfil, "Rutina", LocalTime.NOON, null);
+            when(perfiles.bloquear(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
+            var actividadQuery = consulta(List.of(actividad));
+            var estadoQuery = consulta(List.<EstadoEjecucion>of());
+            var vacia = consulta(List.<Integer>of());
+            var ayuda = consulta(tieneAyuda ? List.of(42) : List.<Integer>of());
+            when(vacia.setMaxResults(1)).thenReturn(vacia);
+            when(ayuda.setMaxResults(1)).thenReturn(ayuda);
+            when(em.createQuery(startsWith("select a from Actividad"), eq(Actividad.class))).thenReturn(actividadQuery);
+            when(em.createQuery(startsWith("select e.estado"), eq(EstadoEjecucion.class))).thenReturn(estadoQuery);
+            when(em.createQuery(startsWith("select e.idEjecucionActividad"), eq(Integer.class))).thenReturn(vacia);
+            when(em.createQuery(startsWith("select g.idProgresoPaso"), eq(Integer.class))).thenReturn(vacia);
+            when(em.createQuery(startsWith("select s.idSolicitudAyuda"), eq(Integer.class))).thenReturn(ayuda);
+            var service = new EdicionActividadService(em, perfiles, null, null, null,
+                mock(PlatformTransactionManager.class), Clock.systemUTC());
+            assertEquals("ACTIVIDAD_MODIFICADA", assertThrows(RechazoActividad.class, () -> service.eliminar(3, 12, 7, 2)).codigo());
+            var result = service.eliminar(3, 12, 7, 1);
+            assertEquals("PENDIENTE", result.estadoHoy());
+            assertEquals(tieneAyuda ? "RETIRADA" : "BORRADA", result.resultado());
+            if (tieneAyuda) assertEquals(EstadoActividad.INACTIVA, actividad.getEstado());
+            verify(em, times(tieneAyuda ? 0 : 1)).remove(actividad);
+        }
+    }
+
     @Test void guardaSinCambiarIdentidadYRechazaUnaSegundaEdicionConLaRevisionAnterior() {
         var em = mock(EntityManager.class);
         var perfiles = mock(PerfilUsuarioRepository.class);

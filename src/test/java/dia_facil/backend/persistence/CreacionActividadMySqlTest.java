@@ -65,7 +65,8 @@ class CreacionActividadMySqlTest {
                 Callable<ActividadResumen> create=()->{assertTrue(start.await(10,TimeUnit.SECONDS));return service.crear(ids.get(0),ids.get(1),data);};
                 var a=pool.submit(create);var b=pool.submit(create);start.countDown();
                 var primera = a.get(30,TimeUnit.SECONDS);
-                assertNotEquals(primera.idActividad(),b.get(30,TimeUnit.SECONDS).idActividad());
+                var segunda = b.get(30,TimeUnit.SECONDS);
+                assertNotEquals(primera.idActividad(),segunda.idActividad());
                 assertEquals(1,pictos.findByIdArasaacIn(List.of(arasaac)).size());
                 long activities=tx.execute(status->em.createQuery("select count(a) from Actividad a where a.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
                 long steps=tx.execute(status->em.createQuery("select count(p) from PasoActividad p where p.actividad.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
@@ -114,6 +115,25 @@ class CreacionActividadMySqlTest {
                 assertEquals(2, vigente.revision());
                 assertEquals("09:00", vigente.hora());
                 assertEquals(1, vigente.pasos().size());
+                var borrada = tx.execute(status -> edicion.eliminar(ids.get(0), ids.get(1), primera.idActividad(), 2));
+                assertEquals("BORRADA", borrada.resultado());
+                tx.executeWithoutResult(status -> {
+                    assertNull(em.find(Actividad.class, primera.idActividad()));
+                    assertEquals(0L, em.createQuery("select count(v) from VersionActividad v where v.actividad.idActividad=:id", Long.class)
+                        .setParameter("id", primera.idActividad()).getSingleResult());
+                    assertEquals(0L, em.createQuery("select count(p) from PasoActividad p where p.actividad.idActividad=:id", Long.class)
+                        .setParameter("id", primera.idActividad()).getSingleResult());
+                    assertNotNull(em.find(IconoActividad.class, ids.get(2)));
+                    assertEquals(1, pictos.findByIdArasaacIn(List.of(arasaac)).size());
+                    var actividad = em.find(Actividad.class, segunda.idActividad());
+                    em.persist(EjecucionActividad.iniciar(actividad, java.time.LocalDate.now(java.time.ZoneId.of("America/Lima"))));
+                });
+                var retirada = tx.execute(status -> edicion.eliminar(ids.get(0), ids.get(1), segunda.idActividad(), 1));
+                assertEquals("RETIRADA", retirada.resultado());
+                assertEquals("EN_PROGRESO", retirada.estadoHoy());
+                long restantes = tx.execute(status ->
+                    actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(ids.get(1), EstadoActividad.ACTIVA));
+                assertEquals(8L, restantes);
             } finally {
                 pool.shutdownNow(); assertTrue(pool.awaitTermination(30,TimeUnit.SECONDS));
                 tx.executeWithoutResult(status->{

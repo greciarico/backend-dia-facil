@@ -45,6 +45,20 @@ class EdicionActividadControllerTest {
         mvc.perform(get(URL).header("Authorization", "Bearer " + ACCESS)).andExpect(status().isNotFound());
     }
 
+    @Test void eliminaSoloConSesionYRevisionYDevuelveElEstadoEfectivo() throws Exception {
+        mvc.perform(delete(URL).param("revision", "2")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(service);
+        when(sesiones.autenticar(ACCESS)).thenReturn(new SesionCuidadorService.Identidad(1L,
+            new SesionCuidadorService.CuidadorResumen(3, "Cuidador", null)));
+        mvc.perform(delete(URL).header("Authorization", "Bearer " + ACCESS)).andExpect(status().isBadRequest());
+        when(service.eliminar(3, 12, 7, 2)).thenReturn(new EdicionActividadService.Eliminacion(7, "RETIRADA", "COMPLETADA"))
+            .thenThrow(RechazoActividad.noEncontrada());
+        var request = delete(URL).param("revision", "2").header("Authorization", "Bearer " + ACCESS);
+        mvc.perform(request).andExpect(status().isOk()).andExpect(jsonPath("$.resultado").value("RETIRADA"))
+            .andExpect(jsonPath("$.estadoHoy").value("COMPLETADA"));
+        mvc.perform(request).andExpect(status().isNotFound());
+    }
+
     private static EdicionActividadService.Detalle detalle(int revision, String estado) {
         return new EdicionActividadService.Detalle(7, revision, "Rutina", "08:00", "bread", estado,
             List.of(new EdicionActividadService.Paso(9, "Paso", null)));

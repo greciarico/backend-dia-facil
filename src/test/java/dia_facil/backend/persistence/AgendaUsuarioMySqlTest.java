@@ -76,6 +76,15 @@ class AgendaUsuarioMySqlTest {
                 assertEquals("Versión nueva", siguiente.nombre());
                 assertEquals("20:00", siguiente.hora());
                 assertEquals("PENDIENTE", siguiente.estado());
+                inProgress.setEstado(EstadoActividad.INACTIVA);
+                complete.setEstado(EstadoActividad.INACTIVA);
+                em.flush();
+                assertEquals("EN_PROGRESO", repo.detalleUsuario(inProgress.getIdActividad(), profile.getIdPerfilUsuario(), today,
+                    EstadoPerfil.ACTIVO, EstadoActividad.ACTIVA).orElseThrow().estado());
+                assertEquals("COMPLETADA", repo.detalleUsuario(complete.getIdActividad(), profile.getIdPerfilUsuario(), today,
+                    EstadoPerfil.ACTIVO, EstadoActividad.ACTIVA).orElseThrow().estado());
+                assertEquals(4, repo.agenda(profile.getIdPerfilUsuario(), today, EstadoPerfil.ACTIVO, EstadoActividad.ACTIVA).size());
+                assertEquals(2, repo.agenda(profile.getIdPerfilUsuario(), today.plusDays(1), EstadoPerfil.ACTIVO, EstadoActividad.ACTIVA).size());
                 profile.setEstado(EstadoPerfil.INACTIVO);em.flush();
                 assertTrue(repo.agenda(profile.getIdPerfilUsuario(),today,EstadoPerfil.ACTIVO,EstadoActividad.ACTIVA).isEmpty());
                 assertTrue(repo.detalleUsuario(pending.getIdActividad(),profile.getIdPerfilUsuario(),today,EstadoPerfil.ACTIVO,EstadoActividad.ACTIVA).isEmpty());

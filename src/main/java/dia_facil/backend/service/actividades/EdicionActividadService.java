@@ -21,6 +21,8 @@ public class EdicionActividadService {
     public record Detalle(Integer idActividad, int revision, String nombre, String hora, String codigoIcono,
                           String estadoHoy, List<Paso> pasos) {}
 
+    public record Eliminacion(Integer idActividad, String resultado, String estadoHoy) {}
+
     private final EntityManager em;
     private final PerfilUsuarioRepository perfiles;
     private final IconoActividadRepository iconos;
@@ -72,6 +74,34 @@ public class EdicionActividadService {
         throw new RechazoActividad("CONFLICTO_CREACION", "No pudimos guardar los cambios. Inténtalo de nuevo.", null);
     }
 
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public Eliminacion eliminar(Integer cuidador, Integer perfil, Integer id, int revision) {
+        if (revision < 1) throw RechazoActividad.datos("revision", "Vuelve a consultar la actividad.");
+        perfiles.bloquear(perfil, cuidador, EstadoPerfil.ACTIVO).orElseThrow(RechazoActividad::noEncontrada);
+        var actividad = propia(cuidador, perfil, id);
+        em.refresh(actividad, LockModeType.PESSIMISTIC_WRITE);
+        if (actividad.getEstado() != EstadoActividad.ACTIVA) throw RechazoActividad.noEncontrada();
+        if (actividad.getRevision() != revision)
+            throw new RechazoActividad("ACTIVIDAD_MODIFICADA", "La actividad cambió en otra sesión.", null);
+        String hoy = estadoHoy(actividad);
+        boolean conservar = existe("select e.idEjecucionActividad from EjecucionActividad e where e.actividad = :actividad", actividad)
+            || existe("select g.idProgresoPaso from ProgresoPaso g where g.pasoActividad.actividad = :actividad", actividad)
+            || existe("""
+                select s.idSolicitudAyuda from SolicitudAyuda s
+                left join s.pasoActividad p left join s.ejecucionActividad e
+                where s.actividad = :actividad or p.actividad = :actividad or e.actividad = :actividad
+                """, actividad);
+        if (conservar) actividad.setEstado(EstadoActividad.INACTIVA);
+        else em.remove(actividad);
+        em.flush();
+        return new Eliminacion(id, conservar ? "RETIRADA" : "BORRADA", hoy);
+    }
+
+    private boolean existe(String jpql, Actividad actividad) {
+        return !em.createQuery(jpql, Integer.class).setParameter("actividad", actividad)
+            .setMaxResults(1).getResultList().isEmpty();
+    }
+
     private Detalle guardar(Actividad actividad, CrearActividad datos, List<PasoEntrada> entrada, Map<Integer, PictogramaArasaac> metadata) {
         var anteriores = pasosVigentes(actividad);
         var icono = iconos.findByCodigo(datos.codigoIcono()).orElseThrow(RechazoActividad::icono);
@@ -120,10 +150,14 @@ public class EdicionActividadService {
             .setParameter("actividad", actividad).setParameter("revision", actividad.getRevision()).getResultList();
     }
 
-    private Detalle detalle(Actividad actividad, List<PasoActividad> pasosActuales) {
-        var estado = em.createQuery("select e.estado from EjecucionActividad e where e.actividad=:actividad and e.fecha=:fecha", EstadoEjecucion.class)
+    private String estadoHoy(Actividad actividad) {
+        return em.createQuery("select e.estado from EjecucionActividad e where e.actividad=:actividad and e.fecha=:fecha", EstadoEjecucion.class)
             .setParameter("actividad", actividad).setParameter("fecha", LocalDate.now(clock))
             .getResultStream().findFirst().map(Enum::name).orElse("PENDIENTE");
+    }
+
+    private Detalle detalle(Actividad actividad, List<PasoActividad> pasosActuales) {
+        var estado = estadoHoy(actividad);
         var resumen = new ActividadResumen(actividad.getIdActividad(), actividad.getNombre(), actividad.getHora(),
             actividad.getIconoActividad() == null ? null : actividad.getIconoActividad().getCodigo());
         return new Detalle(resumen.idActividad(), actividad.getRevision(), resumen.nombre(), resumen.hora(), resumen.codigoIcono(),

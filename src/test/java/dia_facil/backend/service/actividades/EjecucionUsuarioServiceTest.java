@@ -112,6 +112,21 @@ class EjecucionUsuarioServiceTest {
         assertTrue(siguiente.actividad().guiaInicialCompletada());
     }
 
+    @Test void retiroPermiteRetomarYFinalizarHoyPeroImpideCrearOtraEjecucion() {
+        start();
+        actividad.setEstado(EstadoActividad.INACTIVA);
+        assertEquals(1, service.iniciar(principal, 7, fecha).idEjecucion());
+        for (int paso = 1; paso < 5; paso++) service.avanzar(principal, 7, 1, paso);
+        assertEquals("COMPLETADA", service.finalizarGuiada(principal, 7, 1, 5).estado());
+        assertEquals("COMPLETADA", service.consultar(principal, 7, null).estado());
+        clock.instant = clock.instant.plus(Duration.ofDays(1));
+        assertThrows(RechazoActividad.class, () -> service.consultar(principal, 7, null));
+        assertThrows(RechazoActividad.class, () -> service.iniciar(principal, 7, fecha.plusDays(1)));
+        assertThrows(RechazoActividad.class, () -> service.finalizarDirecta(principal, 7, fecha.plusDays(1)));
+        assertEquals("COMPLETADA", service.consultar(principal, 7, 1).estado());
+        assertEquals(1, ejecuciones.size());
+    }
+
     @Test void actividadHistoricaDeOchoPasosConservaElRecorridoCompleto() {
         for (int i = 6; i <= 8; i++) {
             var paso = PasoActividad.crear(actividad, i, "Paso " + i, null);

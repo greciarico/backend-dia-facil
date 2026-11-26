@@ -19,7 +19,7 @@ public interface ActividadRepository extends Repository<Actividad, Integer> {
         left join VersionActividad v on v.actividad = a and v.numero = e.revision
         left join v.icono vi
         where a.idActividad = :actividad and p.idPerfilUsuario = :perfil
-          and p.estado = :estadoPerfil and a.estado = :estadoActividad
+          and p.estado = :estadoPerfil and (a.estado = :estadoActividad or e.idEjecucionActividad is not null)
         """)
     java.util.Optional<dia_facil.backend.service.actividades.ActividadDetalle> detalleUsuario(
         @Param("actividad") Integer actividad, @Param("perfil") Integer perfil,
@@ -31,7 +31,7 @@ public interface ActividadRepository extends Repository<Actividad, Integer> {
         left join EjecucionActividad e on e.actividad = a and e.fecha = :fecha
         left join VersionActividad v on v.actividad = a and v.numero = e.revision
         left join v.icono vi
-        where p.idPerfilUsuario = :perfil and p.estado = :estadoPerfil and a.estado = :estadoActividad
+        where p.idPerfilUsuario = :perfil and p.estado = :estadoPerfil and (a.estado = :estadoActividad or e.idEjecucionActividad is not null)
         order by coalesce(v.hora,a.hora) asc, a.idActividad asc
         """)
     List<dia_facil.backend.service.actividades.ActividadAgenda> agenda(@Param("perfil") Integer perfil,

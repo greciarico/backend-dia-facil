@@ -30,6 +30,7 @@ public class SecurityConfiguration {
         var vinculacion = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/vinculacion");
         var renovarCodigo = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/vinculacion/renovar-codigo");
         var actividades = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/actividades");
+        var eliminarActividad = paths.matcher(HttpMethod.DELETE, "/api/perfiles/{idPerfilUsuario}/actividades/{idActividad}");
         var editarActividad = paths.matcher(HttpMethod.PUT, "/api/perfiles/{idPerfilUsuario}/actividades/{idActividad}");
         var detalleActividad = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/actividades/{idActividad}");
         var crearActividad = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/actividades");
@@ -48,13 +49,13 @@ public class SecurityConfiguration {
         var pushGet=paths.matcher(HttpMethod.GET,"/api/push/registro");
         var pushPut=paths.matcher(HttpMethod.PUT,"/api/push/registro");
         var pushDelete=paths.matcher(HttpMethod.DELETE,"/api/push/registro");
-        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, detalleActividad, editarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete);
+        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, detalleActividad, editarActividad, eliminarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete);
         var bearer = AutenticacionBearerCuidador.filtro(sesiones, mapper);
         bearer.setRequestMatcher(privados);
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar, renovar, cerrar).permitAll()
-                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, detalleActividad, editarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete).hasRole("CUIDADOR")
+                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, actividades, crearActividad, detalleActividad, editarActividad, eliminarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete).hasRole("CUIDADOR")
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, editarActividad, renovarCodigo, cambiarAjustes, restablecerAjustes, cambiarCuidador, restablecerCuidador, leida, pushPut, pushDelete))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, editarActividad, eliminarActividad, renovarCodigo, cambiarAjustes, restablecerAjustes, cambiarCuidador, restablecerCuidador, leida, pushPut, pushDelete))
             .addFilterBefore(bearer, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

@@ -34,12 +34,14 @@ public class EjecucionUsuarioService {
     public Guia consultar(Identidad principal,Integer actividad,Integer ejecucion) {
         var c=contexto(principal,actividad,false);
         var e=ejecucion==null?actual(c,false):porId(c,ejecucion,false);
+        if (e == null) exigirActiva(c);
         return guia(c,e);
     }
     @Transactional(isolation=Isolation.READ_COMMITTED)
     public Guia iniciar(Identidad principal,Integer actividad,LocalDate fecha) {
         var c=contexto(principal,actividad,true);dia(c,fecha);
         var e=actual(c,true);
+        if (e == null) exigirActiva(c);
         var recorrido=recorrido(c,e);
         if(e==null){e=EjecucionActividad.iniciar(c.actividad(),fecha);em.persist(e);}
         if(e.getEstado()!=EstadoEjecucion.COMPLETADA) {
@@ -74,6 +76,7 @@ public class EjecucionUsuarioService {
     public Finalizacion finalizarDirecta(Identidad principal,Integer actividad,LocalDate fecha) {
         var c=contexto(principal,actividad,true);dia(c,fecha);var e=actual(c,true);
         if(e!=null&&e.getEstado()==EstadoEjecucion.COMPLETADA)return finalizacion(e);
+        if (e == null) exigirActiva(c);
         if(!Boolean.TRUE.equals(c.actividad().getGuiaInicialCompletada()))throw RechazoGuia.inicial();
         if(e==null){e=EjecucionActividad.iniciar(c.actividad(),fecha);em.persist(e);}
         cerrar(c,e,ModoFinalizacion.DIRECTA);em.flush();return finalizacion(e);
@@ -90,8 +93,11 @@ public class EjecucionUsuarioService {
         var a=id==null?null:em.find(Actividad.class,id);
         if(a==null||!perfil.idPerfilUsuario().equals(a.getPerfilUsuario().getIdPerfilUsuario()))throw RechazoActividad.noEncontrada();
         if(bloquear)em.refresh(a,LockModeType.PESSIMISTIC_WRITE);
-        if(!perfil.idPerfilUsuario().equals(a.getPerfilUsuario().getIdPerfilUsuario())||a.getEstado()!=EstadoActividad.ACTIVA||a.getPerfilUsuario().getEstado()!=EstadoPerfil.ACTIVO)throw RechazoActividad.noEncontrada();
+        if(!perfil.idPerfilUsuario().equals(a.getPerfilUsuario().getIdPerfilUsuario())||a.getPerfilUsuario().getEstado()!=EstadoPerfil.ACTIVO)throw RechazoActividad.noEncontrada();
         return new Contexto(a,ZonedDateTime.now(clock));
+    }
+    private void exigirActiva(Contexto c) {
+        if (c.actividad().getEstado() != EstadoActividad.ACTIVA) throw RechazoActividad.noEncontrada();
     }
     private EjecucionActividad actual(Contexto c,boolean bloquear) {
         var q=em.createQuery("select e from EjecucionActividad e where e.actividad.idActividad=:actividad and e.fecha=:fecha",EjecucionActividad.class)
