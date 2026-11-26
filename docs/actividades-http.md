@@ -71,7 +71,7 @@ progreso, recordatorios, notificaciones ni historial. Sin cambios de esquema o S
 ## Listado
 
 `GET /api/perfiles/{idPerfilUsuario}/actividades` mantiene ownership, filtro ACTIVA,
-404 de perfil no accesible, no-store y orden estable por ID. Cada resumen añade
+404 de perfil no accesible, no-store y orden ascendente por hora programada e ID en caso de empate. Cada resumen añade
 hora HH:mm y codigoIcono (nullable para actividades antiguas), sin pasos/progreso.
 
 ```json

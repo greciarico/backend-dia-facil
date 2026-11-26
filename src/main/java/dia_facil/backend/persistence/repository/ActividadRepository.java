@@ -36,7 +36,7 @@ public interface ActividadRepository extends Repository<Actividad, Integer> {
         from Actividad a join a.perfilUsuario p left join a.iconoActividad i
         where p.idPerfilUsuario = :perfil and p.idCuidador = :cuidador
           and p.estado = :estadoPerfil and a.estado = :estadoActividad
-        order by a.idActividad asc
+        order by a.hora asc, a.idActividad asc
         """)
     List<ActividadResumen> consultar(@Param("perfil") Integer perfil, @Param("cuidador") Integer cuidador,
         @Param("estadoPerfil") EstadoPerfil estadoPerfil, @Param("estadoActividad") EstadoActividad estadoActividad);
