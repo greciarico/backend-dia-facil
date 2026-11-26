@@ -26,10 +26,7 @@ el texto final de los pasos. Pictograma opcional, identificado únicamente por
 idArasaac positivo. La posición del array genera orden 1..N; no se reciben claves
 UI, orden redundante, plantilla, etiquetas o URL del proveedor.
 
-**No hay un máximo funcional de pasos.** La capacidad preexistente de
-`orden SMALLINT UNSIGNED` es exclusivamente una restricción de representación
-del almacenamiento, no una política de accesibilidad ni de producto. El máximo
-funcional se definirá después de la investigación correspondiente.
+**DF-07:** la creación admite de uno a siete pasos. Un exceso devuelve HTTP 400 `SOLICITUD_INVALIDA`, campo `pasos`. Las actividades existentes conservan todos sus pasos.
 
 201 Created y Cache-Control: no-store:
 

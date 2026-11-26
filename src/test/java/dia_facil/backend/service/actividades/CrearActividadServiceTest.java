@@ -13,10 +13,16 @@ import static org.mockito.Mockito.*;
 
 class CrearActividadServiceTest {
     private static CrearActividad datos(Integer id) { return new CrearActividad("  Desayuno  ", "00:00", "bread", List.of(new CrearActividad.Paso("Texto final", id))); }
-    @Test void validaContratoSinUnMaximoFuncionalNiCambiarDescripciones() {
+    @Test void validaContratoConMaximoDeSieteSinCambiarDescripciones() {
         var validos = datos(null).validado(); assertEquals("Desayuno", validos.nombre()); assertEquals("00:00", validos.horaLocal().toString());
-        var muchos = new CrearActividad("A", "23:59", "bread", Collections.nCopies(65536, new CrearActividad.Paso("  Texto con espacios  ", null))).validado();
-        assertEquals(65536, muchos.pasos().size()); assertEquals("  Texto con espacios  ", muchos.pasos().getFirst().descripcion());
+        var muchos = new CrearActividad("A", "23:59", "bread", Collections.nCopies(7, new CrearActividad.Paso("  Texto con espacios  ", null))).validado();
+        assertEquals(7, muchos.pasos().size()); assertEquals("  Texto con espacios  ", muchos.pasos().getFirst().descripcion());
+        var exceso = new CrearActividad("A", "23:59", "bread", Collections.nCopies(8, new CrearActividad.Paso("Paso", null)));
+        var fixture = fixture();
+        var rechazo = assertThrows(RechazoActividad.class, () -> fixture.service().crear(3, 12, exceso));
+        assertEquals("SOLICITUD_INVALIDA", rechazo.codigo());
+        assertEquals("pasos", rechazo.campo());
+        verifyNoInteractions(fixture.arasaac(), fixture.pictogramas(), fixture.tx());
         for (var invalido : List.of(new CrearActividad(" ", "00:00", "bread", validos.pasos()),
                 new CrearActividad("a".repeat(81), "00:00", "bread", validos.pasos()),
                 new CrearActividad("A", "24:00", "bread", validos.pasos()), new CrearActividad("A", "7:00", "bread", validos.pasos()),

@@ -75,6 +75,25 @@ class EjecucionUsuarioServiceTest {
         clock.instant=clock.instant.plus(Duration.ofDays(1));var tomorrow=fecha.plusDays(1);service.iniciar(principal,7,tomorrow);
         assertEquals(1,progreso.size());service.finalizarDirecta(principal,7,tomorrow);assertEquals(1,progreso.size());assertFalse(progreso.getFirst().getCompletado());
     }
+    @Test void actividadHistoricaDeOchoPasosConservaElRecorridoCompleto() {
+        for (int i = 6; i <= 8; i++) {
+            var paso = PasoActividad.crear(actividad, i, "Paso " + i, null);
+            ReflectionTestUtils.setField(paso, "idPasoActividad", i);
+            pasos.add(paso);
+        }
+        assertEquals(8, service.consultar(principal, 7, null).pasos().size());
+        start();
+        for (int i = 1; i < 8; i++) service.avanzar(principal, 7, 1, i);
+        var resultado = service.finalizarGuiada(principal, 7, 1, 8);
+        assertEquals("COMPLETADA", resultado.estado());
+        assertEquals("GUIADA", resultado.modoFinalizacion());
+        var guia = service.consultar(principal, 7, resultado.idEjecucion());
+        assertEquals("COMPLETADA", guia.estado());
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 8),
+            guia.pasos().stream().map(EjecucionUsuarioService.Paso::idPasoActividad).toList());
+        assertTrue(guia.pasos().stream().allMatch(paso -> paso.alcanzado() && paso.completado()));
+    }
+
     @Test void actividadDeUnSoloPasoFinalizaSinAvanceArtificial() {
         pasos.subList(1,pasos.size()).clear();start();assertThrows(RechazoGuia.class,()->service.avanzar(principal,7,1,1));
         service.finalizarGuiada(principal,7,1,1);assertTrue(progreso.getFirst().getCompletado());assertTrue(actividad.getGuiaInicialCompletada());
