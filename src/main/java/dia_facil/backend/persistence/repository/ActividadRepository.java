@@ -10,6 +10,8 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 public interface ActividadRepository extends Repository<Actividad, Integer> {
+    long countByPerfilUsuario_IdPerfilUsuarioAndEstado(Integer perfil, EstadoActividad estado);
+
     @Query("""
         select new dia_facil.backend.service.actividades.ActividadDetalle(a.idActividad, a.nombre, a.hora, i.codigo, e.estado, a.guiaInicialCompletada)
         from Actividad a join a.perfilUsuario p left join a.iconoActividad i

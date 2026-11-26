@@ -2,6 +2,7 @@ package dia_facil.backend.service.actividades;
 
 import dia_facil.backend.persistence.entity.*;
 import dia_facil.backend.persistence.enums.EstadoPerfil;
+import dia_facil.backend.persistence.enums.EstadoActividad;
 import dia_facil.backend.persistence.repository.*;
 import dia_facil.backend.service.perfiles.RechazoPerfil;
 import jakarta.persistence.EntityManager;
@@ -15,14 +16,17 @@ public class CreacionActividadTransaccionalService {
     private final IconoActividadRepository iconos;
     private final PictogramaRepository pictogramas;
     private final EntityManager em;
+    private final ActividadRepository actividades;
     public CreacionActividadTransaccionalService(PerfilUsuarioRepository perfiles, IconoActividadRepository iconos,
-            PictogramaRepository pictogramas, EntityManager em) {
-        this.perfiles = perfiles; this.iconos = iconos; this.pictogramas = pictogramas; this.em = em;
+            PictogramaRepository pictogramas, EntityManager em, ActividadRepository actividades) {
+        this.perfiles = perfiles; this.iconos = iconos; this.pictogramas = pictogramas; this.em = em; this.actividades = actividades;
     }
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
     public ActividadResumen crear(Integer cuidador, Integer perfilId, CrearActividad datos, Map<Integer, PictogramaArasaac> metadata) {
-        var perfil = perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(perfilId, cuidador, EstadoPerfil.ACTIVO)
+        var perfil = perfiles.bloquear(perfilId, cuidador, EstadoPerfil.ACTIVO)
             .orElseThrow(RechazoPerfil::noEncontrado);
+        if (actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(perfilId, EstadoActividad.ACTIVA)
+                >= LimitesActividad.MAXIMO_ACTIVIDADES_ACTIVAS) throw RechazoActividad.limite();
         var icono = iconos.findByCodigo(datos.codigoIcono()).orElseThrow(RechazoActividad::icono);
         var ids = datos.pasos().stream().map(CrearActividad.Paso::idArasaac).filter(Objects::nonNull).distinct().sorted().toList();
         var locales = new HashMap<Integer, Pictograma>();

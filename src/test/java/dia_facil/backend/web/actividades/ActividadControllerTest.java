@@ -112,6 +112,15 @@ class ActividadControllerTest {
             .andExpect(jsonPath("$.errores[0].campo").value("pasos"));
     }
 
+    @Test void limiteDeActividadesDevuelveConflicto() throws Exception {
+        autenticar();
+        when(creacion.crear(eq(3), eq(12), any())).thenThrow(RechazoActividad.limite());
+        mvc.perform(post("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS)
+            .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.codigo").value("LIMITE_ACTIVIDADES_ALCANZADO"));
+    }
+
     @Test void erroresDelComandoMantienenCodigosYCamposSeguros() throws Exception {
         autenticar();
         for (var codigo : List.of("SOLICITUD_INVALIDA","ICONO_NO_ENCONTRADO","PICTOGRAMA_INVALIDO","CONFLICTO_CREACION")) {

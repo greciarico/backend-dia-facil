@@ -1,6 +1,7 @@
 package dia_facil.backend.persistence;
 
 import dia_facil.backend.persistence.entity.*;
+import dia_facil.backend.persistence.enums.EstadoActividad;
 import dia_facil.backend.persistence.repository.*;
 import dia_facil.backend.service.actividades.*;
 import dia_facil.backend.service.perfiles.*;
@@ -37,6 +38,7 @@ class CreacionActividadMySqlTest {
             EntityManager em=SharedEntityManagerCreator.createSharedEntityManager(factory);
             var manager=new JpaTransactionManager(factory); var tx=new TransactionTemplate(manager);
             var repos=new JpaRepositoryFactory(em); var profiles=repos.getRepository(PerfilUsuarioRepository.class);
+            var actividades=repos.getRepository(ActividadRepository.class);
             var icons=repos.getRepository(IconoActividadRepository.class); var pictos=repos.getRepository(PictogramaRepository.class);
             String code="test-"+UUID.randomUUID(); int arasaac=1_500_000_000+new Random().nextInt(100_000_000);
             assertTrue(pictos.findByIdArasaacIn(List.of(arasaac,arasaac+1)).isEmpty(),"Synthetic identities must not exist");
@@ -51,14 +53,14 @@ class CreacionActividadMySqlTest {
                 var data=new CrearActividad("Test","07:00",code,List.of(new CrearActividad.Paso("Uno",arasaac),new CrearActividad.Paso("Dos",null))).validado();
                 var failure=mock(EntityManager.class,org.mockito.AdditionalAnswers.delegatesTo(em));
                 doAnswer(call->{if(call.getArgument(0) instanceof PasoActividad p && p.getOrden()==2)throw new IllegalStateException("injected"); em.persist(call.getArgument(0)); return null;}).when(failure).persist(any());
-                var failed=proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,failure),manager);
+                var failed=proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,failure,actividades),manager);
                 assertThrows(IllegalStateException.class,()->failed.crear(ids.get(0),ids.get(1),data,Map.of(arasaac,PictogramaArasaac.de(arasaac,"Test"))));
                 long afterRollback=tx.execute(status->em.createQuery("select count(a) from Actividad a where a.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
                 assertEquals(0L,afterRollback);
                 assertTrue(pictos.findByIdArasaacIn(List.of(arasaac)).isEmpty());
                 var remote=mock(PictogramaArasaacService.class); when(remote.resolver(arasaac)).thenReturn(PictogramaArasaac.de(arasaac,"Test"));
                 var service=new CrearActividadService(new PerfilUsuarioService(profiles),icons,pictos,remote,
-                    proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,em),manager));
+                    proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,em,actividades),manager));
                 var start=new CountDownLatch(1);
                 Callable<ActividadResumen> create=()->{assertTrue(start.await(10,TimeUnit.SECONDS));return service.crear(ids.get(0),ids.get(1),data);};
                 var a=pool.submit(create);var b=pool.submit(create);start.countDown();
@@ -67,6 +69,31 @@ class CreacionActividadMySqlTest {
                 long activities=tx.execute(status->em.createQuery("select count(a) from Actividad a where a.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
                 long steps=tx.execute(status->em.createQuery("select count(p) from PasoActividad p where p.actividad.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
                 assertEquals(2L,activities);assertEquals(4L,steps);
+                for (int i = 0; i < 7; i++) service.crear(ids.get(0), ids.get(1), data);
+                tx.executeWithoutResult(status -> {
+                    var perfil = em.find(PerfilUsuario.class, ids.get(1));
+                    var icono = em.find(IconoActividad.class, ids.get(2));
+                    var inactiva = Actividad.crear(perfil, "Inactiva", java.time.LocalTime.NOON, icono);
+                    inactiva.setEstado(EstadoActividad.INACTIVA);
+                    em.persist(inactiva);
+                });
+                var ready = new CountDownLatch(2);
+                var race = new CountDownLatch(1);
+                Callable<String> compete = () -> {
+                    ready.countDown();
+                    assertTrue(race.await(10, TimeUnit.SECONDS));
+                    try { create.call(); return "CREADA"; }
+                    catch (RechazoActividad error) { return error.codigo(); }
+                };
+                var first = pool.submit(compete);
+                var second = pool.submit(compete);
+                assertTrue(ready.await(10, TimeUnit.SECONDS));
+                race.countDown();
+                assertEquals(Set.of("CREADA", "LIMITE_ACTIVIDADES_ALCANZADO"),
+                    new HashSet<>(List.of(first.get(30, TimeUnit.SECONDS), second.get(30, TimeUnit.SECONDS))));
+                long activas = tx.execute(status ->
+                    actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(ids.get(1), EstadoActividad.ACTIVA));
+                assertEquals(10L, activas);
             } finally {
                 pool.shutdownNow(); assertTrue(pool.awaitTermination(30,TimeUnit.SECONDS));
                 tx.executeWithoutResult(status->{

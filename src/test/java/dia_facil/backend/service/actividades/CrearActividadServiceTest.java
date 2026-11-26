@@ -12,6 +12,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CrearActividadServiceTest {
+    @Test void capacidadAgotadaRechazaAntesDeEscribir() {
+        var perfiles = mock(PerfilUsuarioRepository.class);
+        var actividades = mock(ActividadRepository.class);
+        var iconos = mock(IconoActividadRepository.class);
+        var pictogramas = mock(PictogramaRepository.class);
+        var em = mock(EntityManager.class);
+        when(perfiles.bloquear(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(mock(PerfilUsuario.class)));
+        var service = new CreacionActividadTransaccionalService(perfiles, iconos, pictogramas, em, actividades);
+        for (long cantidad : new long[]{10, 11}) {
+            when(actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(12, EstadoActividad.ACTIVA)).thenReturn(cantidad);
+            assertEquals("LIMITE_ACTIVIDADES_ALCANZADO",
+                assertThrows(RechazoActividad.class, () -> service.crear(3, 12, datos(null), Map.of())).codigo());
+        }
+        verifyNoInteractions(iconos, pictogramas, em);
+    }
+
     private static CrearActividad datos(Integer id) { return new CrearActividad("  Desayuno  ", "00:00", "bread", List.of(new CrearActividad.Paso("Texto final", id))); }
     @Test void validaContratoConMaximoDeSieteSinCambiarDescripciones() {
         var validos = datos(null).validado(); assertEquals("Desayuno", validos.nombre()); assertEquals("00:00", validos.horaLocal().toString());
@@ -76,12 +92,12 @@ class CrearActividadServiceTest {
     @Test void persisteDefinicionYPasosPropiosEnOrdenSinTocarPlantillas() {
         var perfiles = mock(PerfilUsuarioRepository.class); var iconos = mock(IconoActividadRepository.class); var pictos = mock(PictogramaRepository.class);
         var em = mock(EntityManager.class); var perfil = PerfilUsuario.crear(null,"Persona",null,"DF-000001");
-        when(perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(12,3,EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
+        when(perfiles.bloquear(12,3,EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
         when(iconos.findByCodigo("bread")).thenReturn(Optional.of(IconoActividad.crear("bread","Pan")));
         var escrituras = new ArrayList<Object>(); doAnswer(call -> { var entity = call.getArgument(0); escrituras.add(entity);
             if (entity instanceof Actividad a) ReflectionTestUtils.setField(a,"idActividad",27); return null;
         }).when(em).persist(any());
-        var service = new CreacionActividadTransaccionalService(perfiles,iconos,pictos,em);
+        var service = new CreacionActividadTransaccionalService(perfiles,iconos,pictos,em,mock(ActividadRepository.class));
         var entrada = new CrearActividad("Desayuno","07:00","bread",List.of(new CrearActividad.Paso("Primero",123),new CrearActividad.Paso("Segundo",null))).validado();
         var resultado = service.crear(3,12,entrada,Map.of(123,PictogramaArasaac.de(123,"Oficial")));
         assertEquals(27,resultado.idActividad()); assertEquals(4,escrituras.size());
@@ -97,7 +113,7 @@ class CrearActividadServiceTest {
         var iconos = mock(IconoActividadRepository.class); var pictos = mock(PictogramaRepository.class);
         var arasaac = mock(PictogramaArasaacService.class); var em = mock(EntityManager.class);
         var perfil = PerfilUsuario.crear(null, "Persona", null, "DF-TEST");
-        when(perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
+        when(perfiles.bloquear(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
         var locales = base.pictogramas().stream().map(p -> Pictograma.crearArasaac(p.nombre(), p.idArasaac())).toList();
         when(pictos.findByIdArasaacIn(any())).thenReturn(locales);
         var escrituras = new ArrayList<Object>();
@@ -106,7 +122,7 @@ class CrearActividadServiceTest {
             if (entity instanceof Actividad a) ReflectionTestUtils.setField(a, "idActividad", 27);
             return null;
         }).when(em).persist(any());
-        var tx = new CreacionActividadTransaccionalService(perfiles, iconos, pictos, em);
+        var tx = new CreacionActividadTransaccionalService(perfiles, iconos, pictos, em, mock(ActividadRepository.class));
         var servicio = new CrearActividadService(identidad, iconos, pictos, arasaac, tx);
         for (var plantilla : base.plantillas()) {
             escrituras.clear();
