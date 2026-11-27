@@ -47,6 +47,37 @@ public class VinculacionTransaccionalService {
         em.flush();
         return resumen(perfil, ahora);
     }
+    public record DispositivoResumen(Integer idDispositivo, String nombre, java.time.LocalDate fechaVinculacion) {}
+
+    @Transactional(readOnly = true)
+    public java.util.List<DispositivoResumen> listarDispositivos(Integer propietario, Integer id) {
+        validarId(id);
+        perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(id, propietario, EstadoPerfil.ACTIVO)
+            .orElseThrow(RechazoPerfil::noEncontrado);
+        return em.createQuery("""
+            select d from Dispositivo d where d.perfilUsuario.idPerfilUsuario=:perfil and d.estado=:estado
+            order by d.fechaVinculacion desc,d.idDispositivo desc
+            """, dia_facil.backend.persistence.entity.Dispositivo.class)
+            .setParameter("perfil", id).setParameter("estado", EstadoDispositivo.ACTIVO).getResultList().stream()
+            .map(d -> new DispositivoResumen(d.getIdDispositivo(), d.getNombre(), d.getFechaVinculacion().toLocalDate())).toList();
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void desvincular(Integer propietario, Integer id, Integer dispositivo) {
+        validarId(id);
+        validarId(dispositivo);
+        perfiles.bloquear(id, propietario, EstadoPerfil.ACTIVO).orElseThrow(RechazoPerfil::noEncontrado);
+        var registro = em.createQuery("""
+            select d from Dispositivo d where d.idDispositivo=:dispositivo and d.perfilUsuario.idPerfilUsuario=:perfil
+            """, dia_facil.backend.persistence.entity.Dispositivo.class)
+            .setParameter("dispositivo", dispositivo).setParameter("perfil", id)
+            .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultStream().findFirst()
+            .orElseThrow(RechazoPerfil::noEncontrado);
+        if (registro.getEstado() == EstadoDispositivo.DESVINCULADO) return;
+        registro.setEstado(EstadoDispositivo.DESVINCULADO);
+        registro.setFechaDesvinculacion(ahora());
+    }
+
     private LocalDateTime ahora() { return em.createQuery("select local datetime", LocalDateTime.class).getSingleResult(); }
     private VinculacionResumen resumen(PerfilUsuario perfil, LocalDateTime ahora) {
         return new VinculacionResumen(perfil.getNombre(), perfil.getCodigoVinculacion(),

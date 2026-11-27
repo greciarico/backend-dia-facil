@@ -27,6 +27,8 @@ public class SecurityConfiguration {
         var perfiles = paths.matcher(HttpMethod.GET, "/api/perfiles");
         var crearPerfil = paths.matcher(HttpMethod.POST, "/api/perfiles");
         var detallePerfil = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}");
+        var listaDispositivos = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/dispositivos");
+        var retirarDispositivo = paths.matcher(HttpMethod.DELETE, "/api/perfiles/{idPerfilUsuario}/dispositivos/{idDispositivo}");
         var vinculacion = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/vinculacion");
         var renovarCodigo = paths.matcher(HttpMethod.POST, "/api/perfiles/{idPerfilUsuario}/vinculacion/renovar-codigo");
         var seguimiento = paths.matcher(HttpMethod.GET, "/api/perfiles/{idPerfilUsuario}/seguimiento");
@@ -51,13 +53,13 @@ public class SecurityConfiguration {
         var pushGet=paths.matcher(HttpMethod.GET,"/api/push/registro");
         var pushPut=paths.matcher(HttpMethod.PUT,"/api/push/registro");
         var pushDelete=paths.matcher(HttpMethod.DELETE,"/api/push/registro");
-        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, seguimiento, detalleSeguimiento, actividades, crearActividad, detalleActividad, editarActividad, eliminarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete);
+        var privados = new org.springframework.security.web.util.matcher.OrRequestMatcher(sesion, perfiles, crearPerfil, detallePerfil, listaDispositivos, retirarDispositivo, vinculacion, renovarCodigo, seguimiento, detalleSeguimiento, actividades, crearActividad, detalleActividad, editarActividad, eliminarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete);
         var bearer = AutenticacionBearerCuidador.filtro(sesiones, mapper);
         bearer.setRequestMatcher(privados);
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(solicitar, verificar, completar, renovar, cerrar).permitAll()
-                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, vinculacion, renovarCodigo, seguimiento, detalleSeguimiento, actividades, crearActividad, detalleActividad, editarActividad, eliminarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete).hasRole("CUIDADOR")
+                .requestMatchers(sesion, perfiles, crearPerfil, detallePerfil, listaDispositivos, retirarDispositivo, vinculacion, renovarCodigo, seguimiento, detalleSeguimiento, actividades, crearActividad, detalleActividad, editarActividad, eliminarActividad, iconos, plantilla, pictogramas, ajustes, cambiarAjustes, restablecerAjustes, ajustesCuidador, cambiarCuidador, restablecerCuidador, notificaciones, notificacion, leida, pushGet, pushPut, pushDelete).hasRole("CUIDADOR")
                 .anyRequest().denyAll())
-            .csrf(csrf -> csrf.ignoringRequestMatchers(solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, editarActividad, eliminarActividad, renovarCodigo, cambiarAjustes, restablecerAjustes, cambiarCuidador, restablecerCuidador, leida, pushPut, pushDelete))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(retirarDispositivo, solicitar, verificar, completar, renovar, cerrar, crearPerfil, crearActividad, editarActividad, eliminarActividad, renovarCodigo, cambiarAjustes, restablecerAjustes, cambiarCuidador, restablecerCuidador, leida, pushPut, pushDelete))
             .addFilterBefore(bearer, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

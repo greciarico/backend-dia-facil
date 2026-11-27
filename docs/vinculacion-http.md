@@ -58,11 +58,12 @@ Mientras renueva se ocultan QR/código y se deshabilita copia. Si falla la respu
 
 Ante 429 también se consulta el estado actual por GET y se representa la espera recibida. Si esa consulta falla, no se inventa una duración ni se repite POST. El contador local usa un instante objetivo monotónico basado en la duración de respuesta; es una estimación conservadora por la latencia y el redondeo. El backend sigue siendo la autoridad. La acción permanece deshabilitada hasta cero; el intervalo únicamente actualiza la UI, no consulta la API. Se elimina al perder foco y no publica tras logout/cambio de sesión.
 
-La cantidad de dispositivos es real; el acceso a su gestión permanece deshabilitado hasta E2. Atrás vuelve al hub del mismo perfil. La confirmación de renovación explica que los dispositivos ya vinculados seguirán funcionando.
+La cantidad de dispositivos activos es real y la opción de gestión abre el listado del perfil. Atrás vuelve al hub del mismo perfil. La confirmación de renovación explica que los dispositivos ya vinculados seguirán funcionando.
 
 ## Fuera de E1
 
-- E2: listado y desvinculación; sin pantallas provisionales.
+- DF-12 añade `GET /api/perfiles/{idPerfilUsuario}/dispositivos` y `DELETE /api/perfiles/{idPerfilUsuario}/dispositivos/{idDispositivo}`. Titularidad de perfil activo obligatoria. El GET devuelve `{ dispositivos: [{ idDispositivo, nombre, fechaVinculacion }] }` con fecha civil ISO y orden descendente por fecha e ID. Ambos contratos usan `Cache-Control: no-store`. DELETE devuelve 204 incluso al repetir una retirada del mismo ID; perfil ajeno o dispositivo fuera del perfil devuelve 404.
+- La retirada fija `DESVINCULADO` y su fecha bajo bloqueos de perfil y dispositivo. Conserva el hash para distinguir la revocación, preserva la rutina y el historial y no afecta los tokens push del cuidador. Se reutiliza el esquema existente. Cada vinculación mantiene su ID, etiqueta y fecha original. Las etiquetas nuevas usan la marca y el modelo disponibles como información descriptiva. Se permiten dispositivos del mismo modelo, sin agrupación por etiqueta ni identificación por IP o UUID adicional. Reabrir restaura la credencial vigente. Volver a vincular tras una revocación crea una nueva credencial y un nuevo registro.
 - E3 se implementó posteriormente: [contrato y seguridad actuales](dispositivos-e3.md),
   con límites por origen/globales, errores genéricos y credenciales independientes.
   Valida otra vez código/perfil bajo el mismo bloqueo de perfil que la renovación.

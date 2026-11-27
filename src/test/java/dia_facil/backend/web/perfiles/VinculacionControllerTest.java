@@ -14,12 +14,32 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(controllers = VinculacionController.class)
+@WebMvcTest(controllers = {VinculacionController.class, DispositivosPerfilController.class})
 @Import({SecurityConfiguration.class, AutenticacionExceptionHandler.class})
 class VinculacionControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean SesionCuidadorService sesiones;
     @MockitoBean VinculacionService service;
+    @MockitoBean VinculacionTransaccionalService dispositivos;
+
+    @Test void dispositivosRequiereSesionYUsaAlCuidadorAutenticado() throws Exception {
+        String ruta = "/api/perfiles/12/dispositivos";
+        mvc.perform(get(ruta)).andExpect(status().isUnauthorized());
+        mvc.perform(delete(ruta + "/4")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(dispositivos);
+        autenticar();
+        when(dispositivos.listarDispositivos(3, 12)).thenReturn(java.util.List.of(
+            new VinculacionTransaccionalService.DispositivoResumen(4, "Android", java.time.LocalDate.of(2026, 11, 26))));
+        mvc.perform(get(ruta).header("Authorization", "Bearer " + ACCESS))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.dispositivos[0].idDispositivo").value(4))
+            .andExpect(jsonPath("$.dispositivos[0].fechaVinculacion").value("2026-11-26"));
+        mvc.perform(delete(ruta + "/4").header("Authorization", "Bearer " + ACCESS))
+            .andExpect(status().isNoContent()).andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
+        verify(dispositivos).desvincular(3, 12, 4);
+        doThrow(RechazoPerfil.noEncontrado()).when(dispositivos).desvincular(3, 12, 9);
+        mvc.perform(delete(ruta + "/9").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isNotFound());
+    }
+
     static final String ACCESS = "a_" + "A".repeat(43);
     void autenticar() { when(sesiones.autenticar(ACCESS)).thenReturn(new SesionCuidadorService.Identidad(1L,
         new SesionCuidadorService.CuidadorResumen(3, "Test", null))); }

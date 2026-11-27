@@ -78,8 +78,11 @@ class AccesoDispositivoTest {
         assertEquals(401,assertThrows(RechazoDispositivo.class,()->service.consultar(1L)).status());
         credential.vincular(Dispositivo.vincular(profile,"Test",now.minusYears(2)));
         assertEquals("VINCULADO",service.consultar(1L).estado());
+        assertEquals(now.minusYears(2), credential.getDispositivo().getFechaUltimaActividad());
         credential.getDispositivo().setEstado(EstadoDispositivo.DESVINCULADO);
-        assertEquals(401,assertThrows(RechazoDispositivo.class,()->service.consultar(1L)).status());
+        var revocada = assertThrows(RechazoDispositivo.class, () -> service.consultar(1L));
+        assertEquals(401, revocada.status());
+        assertEquals("DISPOSITIVO_DESVINCULADO", revocada.codigo());
         credential.getDispositivo().setEstado(EstadoDispositivo.ACTIVO);profile.setEstado(EstadoPerfil.INACTIVO);
         assertEquals(401,assertThrows(RechazoDispositivo.class,()->service.consultar(1L)).status());
     }
