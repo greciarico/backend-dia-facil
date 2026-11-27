@@ -21,17 +21,21 @@ public class CrearActividadService {
         perfiles.detalle(cuidador, perfil); // No external request for another caregiver's profile.
         var datos = entrada.validado();
         if (iconos.findByCodigo(datos.codigoIcono()).isEmpty()) throw RechazoActividad.icono();
+        var metadata = resolverPictogramas(datos);
+        for (int intento = 0; intento < 3; intento++) {
+            try { return transacciones.crear(cuidador, perfil, datos, metadata); }
+            catch (RuntimeException error) { if (!colisionArasaac(error)) throw error; }
+        }
+        throw new RechazoActividad("CONFLICTO_CREACION", "No pudimos completar la creación. Inténtalo de nuevo.", null);
+    }
+    Map<Integer, PictogramaArasaac> resolverPictogramas(CrearActividad datos) {
         var ids = new TreeSet<Integer>();
         datos.pasos().forEach(p -> { if (p.idArasaac() != null) ids.add(p.idArasaac()); });
         var existentes = new HashSet<Integer>();
         if (!ids.isEmpty()) pictogramas.findByIdArasaacIn(ids).forEach(p -> existentes.add(p.getIdArasaac()));
         var metadata = new HashMap<Integer, PictogramaArasaac>();
         for (var id : ids) if (!existentes.contains(id)) metadata.put(id, arasaac.resolver(id));
-        for (int intento = 0; intento < 3; intento++) {
-            try { return transacciones.crear(cuidador, perfil, datos, metadata); }
-            catch (RuntimeException error) { if (!colisionArasaac(error)) throw error; }
-        }
-        throw new RechazoActividad("CONFLICTO_CREACION", "No pudimos completar la creación. Inténtalo de nuevo.", null);
+        return metadata;
     }
     static boolean colisionArasaac(Throwable error) {
         for (var causa = error; causa != null; causa = causa.getCause()) {

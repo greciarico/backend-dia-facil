@@ -90,7 +90,7 @@ class AyudaNotificacionesMySqlTest {
                 var ids=Objects.requireNonNull(tx.execute(status->{
                     var owner=Cuidador.crear(key()+"@example.invalid","Test");em.persist(owner);
                     var profile=PerfilUsuario.crear(owner,"Test",null,new GeneradorCodigoPerfil().generar());em.persist(profile);
-                    var activity=Actividad.crear(profile,"Actividad",LocalTime.NOON,null);em.persist(activity);
+                    var activity=Actividad.crear(profile,"Actividad",LocalTime.NOON,null);em.persist(activity);em.persist(VersionActividad.de(activity));
                     var p1=PasoActividad.crear(activity,1,"Primero",null);em.persist(p1);
                     var p2=PasoActividad.crear(activity,2,"Segundo",null);em.persist(p2);em.flush();
                     return List.of(owner.getIdCuidador(),profile.getIdPerfilUsuario(),activity.getIdActividad(),p1.getIdPasoActividad(),p2.getIdPasoActividad());

@@ -69,7 +69,7 @@ class ActividadControllerTest {
         }
         verifyNoInteractions(actividades);
         mvc.perform(post("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/perfiles/12/actividades/extra").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/perfiles/12/actividades/extra/no-disponible").header("Authorization", "Bearer " + ACCESS)).andExpect(status().isForbidden());
     }
 
     @Test void formatoInvalidoYFalloDeBdMantienenErroresSeguros() throws Exception {
@@ -95,6 +95,32 @@ class ActividadControllerTest {
             .andExpect(jsonPath("$.perfilUsuario").doesNotExist()).andExpect(header().doesNotExist("Set-Cookie"));
         verify(creacion).crear(eq(3),eq(12),any());
     }
+    @Test void ochoPasosDevuelven400ConElCampoPasos() throws Exception {
+        autenticar();
+        when(creacion.crear(eq(3), eq(12), any())).thenAnswer(call -> {
+            CrearActividad entrada = call.getArgument(2);
+            entrada.validado();
+            fail("Se esperaba el rechazo de ocho pasos");
+            return null;
+        });
+        String pasos = String.join(",", java.util.Collections.nCopies(8, "{\"descripcion\":\"Paso\"}"));
+        mvc.perform(post("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS)
+            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            .content("{\"nombre\":\"Rutina\",\"hora\":\"08:00\",\"codigoIcono\":\"bread\",\"pasos\":[" + pasos + "]}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"))
+            .andExpect(jsonPath("$.errores[0].campo").value("pasos"));
+    }
+
+    @Test void limiteDeActividadesDevuelveConflicto() throws Exception {
+        autenticar();
+        when(creacion.crear(eq(3), eq(12), any())).thenThrow(RechazoActividad.limite());
+        mvc.perform(post("/api/perfiles/12/actividades").header("Authorization", "Bearer " + ACCESS)
+            .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.codigo").value("LIMITE_ACTIVIDADES_ALCANZADO"));
+    }
+
     @Test void erroresDelComandoMantienenCodigosYCamposSeguros() throws Exception {
         autenticar();
         for (var codigo : List.of("SOLICITUD_INVALIDA","ICONO_NO_ENCONTRADO","PICTOGRAMA_INVALIDO","CONFLICTO_CREACION")) {

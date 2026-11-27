@@ -40,7 +40,14 @@ class EjecucionUsuarioServiceTest {
             when(q.setParameter(anyString(),any())).thenAnswer(c->{params.put(c.getArgument(0),c.getArgument(1));return q;});when(q.setLockMode(any())).thenReturn(q);
             when(q.getResultStream()).thenAnswer(c->ejecuciones.stream().filter(e->e.getFecha().equals(params.get("fecha"))&&e.getActividad().getIdActividad().equals(params.get("actividad"))));return q;
         });
-        when(em.createQuery(startsWith("select p from PasoActividad"),eq(PasoActividad.class))).thenAnswer(call->{var q=mock(TypedQuery.class);when(q.setParameter(anyString(),any())).thenReturn(q);when(q.getResultList()).thenAnswer(c->pasos.stream().filter(p->p.getActivo()).toList());return q;});
+        when(em.createQuery(startsWith("select p from PasoActividad"),eq(PasoActividad.class))).thenAnswer(call -> {
+            var q = mock(TypedQuery.class);
+            var params = new HashMap<String, Object>();
+            when(q.setParameter(anyString(),any())).thenAnswer(c -> { params.put(c.getArgument(0), c.getArgument(1)); return q; });
+            when(q.getResultList()).thenAnswer(c -> pasos.stream()
+                .filter(p -> p.getActivo() && Objects.equals(p.getRevision(), params.get("revision"))).toList());
+            return q;
+        });
         when(em.createQuery(startsWith("select p from ProgresoPaso"),eq(ProgresoPaso.class))).thenAnswer(call->{var q=mock(TypedQuery.class);var params=new HashMap<String,Object>();
             when(q.setParameter(anyString(),any())).thenAnswer(c->{params.put(c.getArgument(0),c.getArgument(1));return q;});when(q.getResultList()).thenAnswer(c->progreso.stream().filter(p->p.getEjecucionActividad().getIdEjecucionActividad().equals(params.get("ejecucion"))).toList());return q;});
         doAnswer(call->{Object value=call.getArgument(0);if(value instanceof EjecucionActividad e){ReflectionTestUtils.setField(e,"idEjecucionActividad",ejecuciones.size()+1);ejecuciones.add(e);}if(value instanceof ProgresoPaso p){ReflectionTestUtils.setField(p,"idProgresoPaso",progreso.size()+1);progreso.add(p);}return null;}).when(em).persist(any());
@@ -75,6 +82,70 @@ class EjecucionUsuarioServiceTest {
         clock.instant=clock.instant.plus(Duration.ofDays(1));var tomorrow=fecha.plusDays(1);service.iniciar(principal,7,tomorrow);
         assertEquals(1,progreso.size());service.finalizarDirecta(principal,7,tomorrow);assertEquals(1,progreso.size());assertFalse(progreso.getFirst().getCompletado());
     }
+    @Test void revisionNuevaNoAlteraUnaGuiaIniciadaNiCompletada() {
+        var anterior = VersionActividad.de(actividad);
+        var versionQuery = mock(TypedQuery.class);
+        when(em.createQuery(startsWith("select v from VersionActividad"), eq(VersionActividad.class))).thenReturn(versionQuery);
+        when(versionQuery.setParameter(anyString(), any())).thenReturn(versionQuery);
+        when(versionQuery.getSingleResult()).thenReturn(anterior);
+        start();
+        service.avanzar(principal, 7, 1, 1);
+        actividad.setRevision(2);
+        actividad.setNombre("Rutina actualizada");
+        var nuevo = PasoActividad.crear(actividad, 1, "Paso nuevo", null);
+        ReflectionTestUtils.setField(nuevo, "idPasoActividad", 6);
+        pasos.add(nuevo);
+
+        var guia = service.iniciar(principal, 7, fecha);
+        assertEquals(anterior.getNombre(), guia.actividad().nombre());
+        assertEquals(List.of(1, 2, 3, 4, 5),
+            guia.pasos().stream().map(EjecucionUsuarioService.Paso::idPasoActividad).toList());
+        assertTrue(guia.pasos().getFirst().completado());
+        for (int i = 2; i < 5; i++) service.avanzar(principal, 7, 1, i);
+        assertEquals(anterior.getNombre(), service.finalizarGuiada(principal, 7, 1, 5).actividad().nombre());
+        assertTrue(service.consultar(principal, 7, 1).pasos().stream().allMatch(EjecucionUsuarioService.Paso::completado));
+
+        clock.instant = clock.instant.plus(Duration.ofDays(1));
+        var siguiente = service.iniciar(principal, 7, fecha.plusDays(1));
+        assertEquals("Rutina actualizada", siguiente.actividad().nombre());
+        assertEquals(List.of(6), siguiente.pasos().stream().map(EjecucionUsuarioService.Paso::idPasoActividad).toList());
+        assertTrue(siguiente.actividad().guiaInicialCompletada());
+    }
+
+    @Test void retiroPermiteRetomarYFinalizarHoyPeroImpideCrearOtraEjecucion() {
+        start();
+        actividad.setEstado(EstadoActividad.INACTIVA);
+        assertEquals(1, service.iniciar(principal, 7, fecha).idEjecucion());
+        for (int paso = 1; paso < 5; paso++) service.avanzar(principal, 7, 1, paso);
+        assertEquals("COMPLETADA", service.finalizarGuiada(principal, 7, 1, 5).estado());
+        assertEquals("COMPLETADA", service.consultar(principal, 7, null).estado());
+        clock.instant = clock.instant.plus(Duration.ofDays(1));
+        assertThrows(RechazoActividad.class, () -> service.consultar(principal, 7, null));
+        assertThrows(RechazoActividad.class, () -> service.iniciar(principal, 7, fecha.plusDays(1)));
+        assertThrows(RechazoActividad.class, () -> service.finalizarDirecta(principal, 7, fecha.plusDays(1)));
+        assertEquals("COMPLETADA", service.consultar(principal, 7, 1).estado());
+        assertEquals(1, ejecuciones.size());
+    }
+
+    @Test void actividadHistoricaDeOchoPasosConservaElRecorridoCompleto() {
+        for (int i = 6; i <= 8; i++) {
+            var paso = PasoActividad.crear(actividad, i, "Paso " + i, null);
+            ReflectionTestUtils.setField(paso, "idPasoActividad", i);
+            pasos.add(paso);
+        }
+        assertEquals(8, service.consultar(principal, 7, null).pasos().size());
+        start();
+        for (int i = 1; i < 8; i++) service.avanzar(principal, 7, 1, i);
+        var resultado = service.finalizarGuiada(principal, 7, 1, 8);
+        assertEquals("COMPLETADA", resultado.estado());
+        assertEquals("GUIADA", resultado.modoFinalizacion());
+        var guia = service.consultar(principal, 7, resultado.idEjecucion());
+        assertEquals("COMPLETADA", guia.estado());
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 8),
+            guia.pasos().stream().map(EjecucionUsuarioService.Paso::idPasoActividad).toList());
+        assertTrue(guia.pasos().stream().allMatch(paso -> paso.alcanzado() && paso.completado()));
+    }
+
     @Test void actividadDeUnSoloPasoFinalizaSinAvanceArtificial() {
         pasos.subList(1,pasos.size()).clear();start();assertThrows(RechazoGuia.class,()->service.avanzar(principal,7,1,1));
         service.finalizarGuiada(principal,7,1,1);assertTrue(progreso.getFirst().getCompletado());assertTrue(actividad.getGuiaInicialCompletada());

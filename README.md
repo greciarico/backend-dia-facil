@@ -9,7 +9,7 @@ ejecutadas hoy ni tablas modeladas con funcionalidades disponibles.
 ## Módulos actuales
 
 - [Autenticación y sesiones del cuidador](docs/auth-http.md).
-- [Perfiles](docs/perfiles-http.md) y [crear/listar actividades](docs/actividades-http.md).
+- [Perfiles](docs/perfiles-http.md), [gestión de actividades](docs/actividades-http.md) y [seguimiento diario e histórico (contrato y transición SQL)](docs/seguimiento-http.md).
 - [Iconos](docs/iconos-actividad-http.md), [plantillas](docs/plantillas-actividad-http.md)
   y [pictogramas ARASAAC](docs/pictogramas-arasaac.md).
 - [Vinculación E1](docs/vinculacion-http.md) y [credencial de dispositivo E3](docs/dispositivos-e3.md).
@@ -109,7 +109,7 @@ la collation de la base y las tablas. Esta configuracion no modifica MySQL.
 
 En `local`, `spring.jpa.hibernate.ddl-auto=update` permite crear o actualizar
 tablas a partir de las 23 entidades implementadas. Sobre una base vacia,
-Hibernate genera el esquema sin ejecutar manualmente el SQL de referencia.
+Hibernate genera el esquema operativo sin ejecutar manualmente el SQL de referencia. Las tablas de DF-11 se instalan por separado con la [transición SQL de Seguimiento](docs/seguimiento-http.md#transición), tanto en bases existentes como en instalaciones nuevas.
 Las tablas fijan utf8mb4/utf8mb4_unicode_ci y usan InnoDB; los defaults de la
 base se deben comprobar por separado.
 Fuera de `local`, `ddl-auto=none` impide la generacion del esquema.

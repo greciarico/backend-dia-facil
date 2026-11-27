@@ -26,10 +26,7 @@ el texto final de los pasos. Pictograma opcional, identificado únicamente por
 idArasaac positivo. La posición del array genera orden 1..N; no se reciben claves
 UI, orden redundante, plantilla, etiquetas o URL del proveedor.
 
-**No hay un máximo funcional de pasos.** La capacidad preexistente de
-`orden SMALLINT UNSIGNED` es exclusivamente una restricción de representación
-del almacenamiento, no una política de accesibilidad ni de producto. El máximo
-funcional se definirá después de la investigación correspondiente.
+**DF-07:** la creación admite de uno a siete pasos. Un exceso devuelve HTTP 400 `SOLICITUD_INVALIDA`, campo `pasos`. Las actividades existentes conservan todos sus pasos.
 
 201 Created y Cache-Control: no-store:
 
@@ -71,7 +68,7 @@ progreso, recordatorios, notificaciones ni historial. Sin cambios de esquema o S
 ## Listado
 
 `GET /api/perfiles/{idPerfilUsuario}/actividades` mantiene ownership, filtro ACTIVA,
-404 de perfil no accesible, no-store y orden estable por ID. Cada resumen añade
+404 de perfil no accesible, no-store y orden ascendente por hora programada e ID en caso de empate. Cada resumen añade
 hora HH:mm y codigoIcono (nullable para actividades antiguas), sin pasos/progreso.
 
 ```json
@@ -117,3 +114,17 @@ El smoke test general BackendApplicationTests.contextLoads requiere un datasourc
 de pruebas no configurado: falló al intentar arrancar y quedó fuera de la ejecución
 aislada final; no se modificó para ocultar ese requisito. Sin prueba en MySQL real
 ni Android físico en este entorno.
+
+La consulta del detalle y el guardado de una actividad existente se documentan en [DF-09](editar-actividad.md).
+
+## Eliminación (DF-10)
+
+`DELETE /api/perfiles/{idPerfilUsuario}/actividades/{idActividad}?revision={revision}` devuelve 200 con `idActividad`, `resultado` (BORRADA o RETIRADA) y `estadoHoy` (PENDIENTE, EN_PROGRESO o COMPLETADA). La revisión se obtiene del detalle de edición. Una revisión inválida devuelve 400, una obsoleta devuelve 409 ACTIVIDAD_MODIFICADA, y una actividad ajena, inexistente o retirada devuelve 404. Tras una respuesta perdida, consultar el listado antes de volver a intentar.
+
+El servidor bloquea primero el perfil y luego la actividad. Si encuentra ejecución, progreso o ayuda asociada, conserva esta información y retira la actividad de la rutina activa. En otro caso, borra sus versiones y pasos junto con la actividad. Ambos resultados liberan un cupo y conservan los recursos compartidos.
+
+La agenda del día conserva una actividad retirada cuando tiene ejecución para esa fecha, incluida su versión. Se puede retomar, finalizar y pedir ayuda contextual en una ejecución vigente. Una actividad retirada no admite nuevas ejecuciones. La agenda puede mostrar más de diez tarjetas mientras se conservan ejecuciones del día.
+
+## Capacidad de la rutina (DF-08)
+
+El GET devuelve todas las actividades activas. El POST admite hasta diez activas por perfil y devuelve HTTP 409 `LIMITE_ACTIVIDADES_ALCANZADO` al alcanzar o superar el máximo. Se cuentan las definiciones activas, incluidas las ya completadas hoy. El bloqueo de perfil y el conteo ocurren dentro de la transacción de alta.

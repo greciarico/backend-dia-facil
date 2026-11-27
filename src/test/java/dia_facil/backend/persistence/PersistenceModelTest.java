@@ -31,6 +31,7 @@ import dia_facil.backend.persistence.entity.PalabraClaveActividad;
 import dia_facil.backend.persistence.entity.PlantillaPaso;
 import dia_facil.backend.persistence.entity.Actividad;
 import dia_facil.backend.persistence.entity.PasoActividad;
+import dia_facil.backend.persistence.entity.VersionActividad;
 import dia_facil.backend.persistence.entity.Dispositivo;
 import dia_facil.backend.persistence.entity.EjecucionActividad;
 import dia_facil.backend.persistence.entity.ProgresoPaso;
@@ -75,6 +76,7 @@ class PersistenceModelTest {
         PlantillaPaso.class,
         Actividad.class,
         PasoActividad.class,
+        VersionActividad.class,
         Dispositivo.class,
         dia_facil.backend.persistence.entity.CredencialDispositivo.class,
         EjecucionActividad.class,
@@ -138,7 +140,7 @@ class PersistenceModelTest {
 
     @Test
     void tablesColumnsPrimaryKeysAndTypesMatchReference() {
-        assertEquals(25, tables.size());
+        assertEquals(26, tables.size());
         assertEquals(rows("T").stream().map(row -> row[1]).collect(Collectors.toSet()), tables.keySet());
         for (var row : rows("T")) {
             var table = tables.get(row[1]);
@@ -336,6 +338,14 @@ class PersistenceModelTest {
                 .filter(column -> column.getName().endsWith("_hash")).toList();
             assertFalse(hashes.isEmpty());
             for (var column : hashes) assertEquals(Long.valueOf(32), column.getLength(), table + "." + column.getName());
+        }
+    }
+
+    @Test
+    void consultasDeAgendaConVersionCompilanSinJdbc() {
+        try (var em = sessionFactory.createEntityManager()) {
+            new org.springframework.data.jpa.repository.support.JpaRepositoryFactory(em)
+                .getRepository(dia_facil.backend.persistence.repository.ActividadRepository.class);
         }
     }
 

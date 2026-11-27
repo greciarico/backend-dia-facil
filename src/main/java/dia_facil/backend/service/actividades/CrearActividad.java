@@ -16,7 +16,8 @@ public record CrearActividad(String nombre, String hora, String codigoIcono, Lis
         if (codigoIcono == null || !codigoIcono.matches("[a-z][a-z0-9]*(?:-[a-z0-9]+)*") || codigoIcono.length() > 60)
             throw RechazoActividad.datos("codigoIcono", "Selecciona un ícono del catálogo.");
         if (pasos == null || pasos.isEmpty()) throw RechazoActividad.datos("pasos", "Agrega al menos un paso.");
-        // No maximum step count policy. The existing SQL type is not a product limit.
+        if (pasos.size() > LimitesActividad.MAXIMO_PASOS)
+            throw RechazoActividad.datos("pasos", "Una actividad puede tener como máximo " + LimitesActividad.MAXIMO_PASOS + " pasos.");
         for (int i = 0; i < pasos.size(); i++) {
             var paso = pasos.get(i);
             if (paso == null || paso.descripcion() == null || paso.descripcion().isBlank() || paso.descripcion().length() > 120)

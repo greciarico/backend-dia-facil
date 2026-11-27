@@ -12,11 +12,33 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CrearActividadServiceTest {
+    @Test void capacidadAgotadaRechazaAntesDeEscribir() {
+        var perfiles = mock(PerfilUsuarioRepository.class);
+        var actividades = mock(ActividadRepository.class);
+        var iconos = mock(IconoActividadRepository.class);
+        var pictogramas = mock(PictogramaRepository.class);
+        var em = mock(EntityManager.class);
+        when(perfiles.bloquear(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(mock(PerfilUsuario.class)));
+        var service = new CreacionActividadTransaccionalService(perfiles, iconos, pictogramas, em, actividades, mock(RegistroSeguimiento.class));
+        for (long cantidad : new long[]{10, 11}) {
+            when(actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(12, EstadoActividad.ACTIVA)).thenReturn(cantidad);
+            assertEquals("LIMITE_ACTIVIDADES_ALCANZADO",
+                assertThrows(RechazoActividad.class, () -> service.crear(3, 12, datos(null), Map.of())).codigo());
+        }
+        verifyNoInteractions(iconos, pictogramas, em);
+    }
+
     private static CrearActividad datos(Integer id) { return new CrearActividad("  Desayuno  ", "00:00", "bread", List.of(new CrearActividad.Paso("Texto final", id))); }
-    @Test void validaContratoSinUnMaximoFuncionalNiCambiarDescripciones() {
+    @Test void validaContratoConMaximoDeSieteSinCambiarDescripciones() {
         var validos = datos(null).validado(); assertEquals("Desayuno", validos.nombre()); assertEquals("00:00", validos.horaLocal().toString());
-        var muchos = new CrearActividad("A", "23:59", "bread", Collections.nCopies(65536, new CrearActividad.Paso("  Texto con espacios  ", null))).validado();
-        assertEquals(65536, muchos.pasos().size()); assertEquals("  Texto con espacios  ", muchos.pasos().getFirst().descripcion());
+        var muchos = new CrearActividad("A", "23:59", "bread", Collections.nCopies(7, new CrearActividad.Paso("  Texto con espacios  ", null))).validado();
+        assertEquals(7, muchos.pasos().size()); assertEquals("  Texto con espacios  ", muchos.pasos().getFirst().descripcion());
+        var exceso = new CrearActividad("A", "23:59", "bread", Collections.nCopies(8, new CrearActividad.Paso("Paso", null)));
+        var fixture = fixture();
+        var rechazo = assertThrows(RechazoActividad.class, () -> fixture.service().crear(3, 12, exceso));
+        assertEquals("SOLICITUD_INVALIDA", rechazo.codigo());
+        assertEquals("pasos", rechazo.campo());
+        verifyNoInteractions(fixture.arasaac(), fixture.pictogramas(), fixture.tx());
         for (var invalido : List.of(new CrearActividad(" ", "00:00", "bread", validos.pasos()),
                 new CrearActividad("a".repeat(81), "00:00", "bread", validos.pasos()),
                 new CrearActividad("A", "24:00", "bread", validos.pasos()), new CrearActividad("A", "7:00", "bread", validos.pasos()),
@@ -70,19 +92,19 @@ class CrearActividadServiceTest {
     @Test void persisteDefinicionYPasosPropiosEnOrdenSinTocarPlantillas() {
         var perfiles = mock(PerfilUsuarioRepository.class); var iconos = mock(IconoActividadRepository.class); var pictos = mock(PictogramaRepository.class);
         var em = mock(EntityManager.class); var perfil = PerfilUsuario.crear(null,"Persona",null,"DF-000001");
-        when(perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(12,3,EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
+        when(perfiles.bloquear(12,3,EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
         when(iconos.findByCodigo("bread")).thenReturn(Optional.of(IconoActividad.crear("bread","Pan")));
         var escrituras = new ArrayList<Object>(); doAnswer(call -> { var entity = call.getArgument(0); escrituras.add(entity);
             if (entity instanceof Actividad a) ReflectionTestUtils.setField(a,"idActividad",27); return null;
         }).when(em).persist(any());
-        var service = new CreacionActividadTransaccionalService(perfiles,iconos,pictos,em);
+        var service = new CreacionActividadTransaccionalService(perfiles,iconos,pictos,em,mock(ActividadRepository.class), mock(RegistroSeguimiento.class));
         var entrada = new CrearActividad("Desayuno","07:00","bread",List.of(new CrearActividad.Paso("Primero",123),new CrearActividad.Paso("Segundo",null))).validado();
         var resultado = service.crear(3,12,entrada,Map.of(123,PictogramaArasaac.de(123,"Oficial")));
-        assertEquals(27,resultado.idActividad()); assertEquals(4,escrituras.size());
+        assertEquals(27,resultado.idActividad()); assertEquals(5,escrituras.size());
         var pic = (Pictograma)escrituras.get(0); assertEquals("ARASAAC",pic.getFuente()); assertNull(pic.getUrlImagen());
         var actividad = (Actividad)escrituras.get(1); assertSame(perfil,actividad.getPerfilUsuario()); assertEquals(EstadoActividad.ACTIVA,actividad.getEstado()); assertFalse(actividad.getGuiaInicialCompletada());
-        for (int i=0;i<2;i++) { var paso=(PasoActividad)escrituras.get(i+2); assertEquals(i+1,paso.getOrden()); assertTrue(paso.getActivo()); assertSame(actividad,paso.getActividad()); }
-        assertSame(pic,((PasoActividad)escrituras.get(2)).getPictograma()); assertNull(((PasoActividad)escrituras.get(3)).getPictograma()); verify(em).flush();
+        for (int i=0;i<2;i++) { var paso=(PasoActividad)escrituras.get(i+3); assertEquals(i+1,paso.getOrden()); assertTrue(paso.getActivo()); assertSame(actividad,paso.getActividad()); }
+        assertSame(pic,((PasoActividad)escrituras.get(3)).getPictograma()); assertNull(((PasoActividad)escrituras.get(4)).getPictograma()); verify(em).flush();
     }
     @Test void creaLasSeisRutinasConPasosPropiosYPictogramasOpcionalesSinConsultarArasaac() {
         var base = dia_facil.backend.service.datosbase.LectorDatosBase.leer(tools.jackson.databind.json.JsonMapper.builder().build(),
@@ -91,7 +113,7 @@ class CrearActividadServiceTest {
         var iconos = mock(IconoActividadRepository.class); var pictos = mock(PictogramaRepository.class);
         var arasaac = mock(PictogramaArasaacService.class); var em = mock(EntityManager.class);
         var perfil = PerfilUsuario.crear(null, "Persona", null, "DF-TEST");
-        when(perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
+        when(perfiles.bloquear(12, 3, EstadoPerfil.ACTIVO)).thenReturn(Optional.of(perfil));
         var locales = base.pictogramas().stream().map(p -> Pictograma.crearArasaac(p.nombre(), p.idArasaac())).toList();
         when(pictos.findByIdArasaacIn(any())).thenReturn(locales);
         var escrituras = new ArrayList<Object>();
@@ -100,7 +122,7 @@ class CrearActividadServiceTest {
             if (entity instanceof Actividad a) ReflectionTestUtils.setField(a, "idActividad", 27);
             return null;
         }).when(em).persist(any());
-        var tx = new CreacionActividadTransaccionalService(perfiles, iconos, pictos, em);
+        var tx = new CreacionActividadTransaccionalService(perfiles, iconos, pictos, em, mock(ActividadRepository.class), mock(RegistroSeguimiento.class));
         var servicio = new CrearActividadService(identidad, iconos, pictos, arasaac, tx);
         for (var plantilla : base.plantillas()) {
             escrituras.clear();
@@ -108,10 +130,10 @@ class CrearActividadServiceTest {
             var entrada = new CrearActividad(plantilla.nombre(), "08:00", plantilla.icono(), plantilla.pasos().stream()
                 .map(p -> new CrearActividad.Paso(p.descripcion(), p.pictograma() == null ? null : Integer.valueOf(p.pictograma().substring(8)))).toList());
             var resultado = servicio.crear(3, 12, entrada);
-            assertEquals(plantilla.nombre(), resultado.nombre()); assertEquals(plantilla.pasos().size() + 1, escrituras.size());
+            assertEquals(plantilla.nombre(), resultado.nombre()); assertEquals(plantilla.pasos().size() + 2, escrituras.size());
             var actividad = (Actividad) escrituras.getFirst(); assertSame(perfil, actividad.getPerfilUsuario());
             for (int i = 0; i < plantilla.pasos().size(); i++) {
-                var paso = (PasoActividad) escrituras.get(i + 1); var esperado = entrada.pasos().get(i);
+                var paso = (PasoActividad) escrituras.get(i + 2); var esperado = entrada.pasos().get(i);
                 assertEquals(i + 1, paso.getOrden()); assertEquals(esperado.descripcion(), paso.getDescripcion());
                 assertSame(actividad, paso.getActividad());
                 if (esperado.idArasaac() == null) assertNull(paso.getPictograma());

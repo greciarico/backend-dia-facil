@@ -324,7 +324,7 @@ class PushMySqlTest {
     @Test void ayudaGeneralContextualYFinalizacionUsanEventosRealesSinDuplicarNiAvanzarPorAyuda() {
         register(a, UUID.randomUUID(), token()); register(b, UUID.randomUUID(), token());
         var ids=Objects.requireNonNull(tx.execute(status->{
-            var activity=Actividad.crear(em.find(PerfilUsuario.class,a.profile()),"Desayunar",LocalTime.NOON,null);em.persist(activity);
+            var activity=Actividad.crear(em.find(PerfilUsuario.class,a.profile()),"Desayunar",LocalTime.NOON,null);em.persist(activity);em.persist(VersionActividad.de(activity));
             var first=PasoActividad.crear(activity,1,"Primero",null);em.persist(first);
             var last=PasoActividad.crear(activity,2,"Segundo",null);em.persist(last);em.flush();
             return List.of(activity.getIdActividad(),first.getIdPasoActividad(),last.getIdPasoActividad());

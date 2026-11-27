@@ -57,6 +57,10 @@ public class Actividad {
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private IconoActividad iconoActividad;
 
+    @ColumnDefault("1")
+    @Column(name = "revision", nullable = false)
+    private int revision = 1;
+
     @Column(name = "nombre", nullable = false, length = 80)
     private String nombre;
 

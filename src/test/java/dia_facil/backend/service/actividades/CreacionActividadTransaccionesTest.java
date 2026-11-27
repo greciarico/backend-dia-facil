@@ -27,11 +27,11 @@ class CreacionActividadTransaccionesTest {
     @Test void falloEnSegundoPasoRevierteLaUnicaTransaccionDeTodaLaDefinicion() {
         var perfiles = mock(PerfilUsuarioRepository.class); var iconos = mock(IconoActividadRepository.class);
         var em = mock(EntityManager.class); var pictos = mock(PictogramaRepository.class); var manager = new Manager();
-        when(perfiles.findByIdPerfilUsuarioAndIdCuidadorAndEstado(12,3,EstadoPerfil.ACTIVO))
+        when(perfiles.bloquear(12,3,EstadoPerfil.ACTIVO))
             .thenReturn(Optional.of(PerfilUsuario.crear(null,"P",null,"DF-000001")));
         when(iconos.findByCodigo("bread")).thenReturn(Optional.of(IconoActividad.crear("bread","Pan")));
         doAnswer(call -> { if (call.getArgument(0) instanceof PasoActividad paso && paso.getOrden() == 2) throw new IllegalStateException("reserved"); return null; }).when(em).persist(any());
-        var proxy = new ProxyFactory(new CreacionActividadTransaccionalService(perfiles,iconos,pictos,em));
+        var proxy = new ProxyFactory(new CreacionActividadTransaccionalService(perfiles,iconos,pictos,em,mock(dia_facil.backend.persistence.repository.ActividadRepository.class), mock(RegistroSeguimiento.class)));
         proxy.setProxyTargetClass(true); proxy.addAdvice(new TransactionInterceptor(manager,new AnnotationTransactionAttributeSource()));
         var service = (CreacionActividadTransaccionalService)proxy.getProxy();
         var entrada = new CrearActividad("A","07:00","bread",List.of(new CrearActividad.Paso("Uno",123),new CrearActividad.Paso("Dos",null))).validado();

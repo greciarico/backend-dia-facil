@@ -77,9 +77,7 @@ su referencia al pictograma; pasos propios admiten selección ARASAAC o null.
 Eliminar requiere confirmación. Drag & drop desde handle conserva claves y
 recalcula órdenes; acciones accesibles Subir/Bajar continúan disponibles.
 
-No se impone un máximo funcional inventado. La única barrera técnica de cantidad
-es 65535 posiciones por SMALLINT UNSIGNED. Cero pasos es válido temporalmente en
-el borrador; [creación C](actividades-http.md) exige mínimo un paso válido.
+DF-07 permite cero pasos en el borrador y de uno a siete al crear. Una sugerencia más larga no se aplica ni se recorta. El contrato y el catálogo de plantillas se conservan.
 
 Los cinco predeterminados de Desayunar entregan referencias ARASAAC estables.
 Las filas muestran miniatura y texto; si falta/falla imagen se conserva fallback

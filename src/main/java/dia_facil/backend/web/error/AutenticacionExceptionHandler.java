@@ -37,7 +37,7 @@ public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandle
     public ResponseEntity<ProblemDetail> actividadInvalida(dia_facil.backend.service.actividades.RechazoActividad error, HttpServletRequest request) {
         int status = switch(error.codigo()) {
             case "ACTIVIDAD_NO_ENCONTRADA" -> 404;
-            case "CONFLICTO_CREACION" -> 409;
+            case "CONFLICTO_CREACION", "LIMITE_ACTIVIDADES_ALCANZADO", "ACTIVIDAD_MODIFICADA" -> 409;
             default -> 400;
         };
         var problema = ProblemasHttp.crear(status,
