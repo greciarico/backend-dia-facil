@@ -29,17 +29,19 @@ public class EdicionActividadService {
     private final CrearActividadService creacion;
     private final CreacionActividadTransaccionalService pasos;
     private final Clock clock;
+    private final RegistroSeguimiento seguimiento;
     private final TransactionTemplate escritura;
 
     public EdicionActividadService(EntityManager em, PerfilUsuarioRepository perfiles, IconoActividadRepository iconos,
             CrearActividadService creacion, CreacionActividadTransaccionalService pasos, PlatformTransactionManager manager,
-            @Qualifier("agendaUsuarioClock") Clock clock) {
+            @Qualifier("agendaUsuarioClock") Clock clock, RegistroSeguimiento seguimiento) {
         this.em = em;
         this.perfiles = perfiles;
         this.iconos = iconos;
         this.creacion = creacion;
         this.pasos = pasos;
         this.clock = clock;
+        this.seguimiento = seguimiento;
         escritura = new TransactionTemplate(manager);
         escritura.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
@@ -83,7 +85,8 @@ public class EdicionActividadService {
         if (actividad.getEstado() != EstadoActividad.ACTIVA) throw RechazoActividad.noEncontrada();
         if (actividad.getRevision() != revision)
             throw new RechazoActividad("ACTIVIDAD_MODIFICADA", "La actividad cambió en otra sesión.", null);
-        String hoy = estadoHoy(actividad);
+        var fecha = LocalDate.now(clock);
+        String hoy = estadoHoy(actividad, fecha);
         boolean conservar = existe("select e.idEjecucionActividad from EjecucionActividad e where e.actividad = :actividad", actividad)
             || existe("select g.idProgresoPaso from ProgresoPaso g where g.pasoActividad.actividad = :actividad", actividad)
             || existe("""
@@ -91,6 +94,7 @@ public class EdicionActividadService {
                 left join s.pasoActividad p left join s.ejecucionActividad e
                 where s.actividad = :actividad or p.actividad = :actividad or e.actividad = :actividad
                 """, actividad);
+        seguimiento.retirar(actividad, fecha);
         if (conservar) actividad.setEstado(EstadoActividad.INACTIVA);
         else em.remove(actividad);
         em.flush();
@@ -135,6 +139,7 @@ public class EdicionActividadService {
             nuevos.add(paso);
         }
         em.flush();
+        seguimiento.guardar(actividad, nuevos);
         return detalle(actividad, nuevos);
     }
 
@@ -150,14 +155,14 @@ public class EdicionActividadService {
             .setParameter("actividad", actividad).setParameter("revision", actividad.getRevision()).getResultList();
     }
 
-    private String estadoHoy(Actividad actividad) {
+    private String estadoHoy(Actividad actividad, LocalDate fecha) {
         return em.createQuery("select e.estado from EjecucionActividad e where e.actividad=:actividad and e.fecha=:fecha", EstadoEjecucion.class)
-            .setParameter("actividad", actividad).setParameter("fecha", LocalDate.now(clock))
+            .setParameter("actividad", actividad).setParameter("fecha", fecha)
             .getResultStream().findFirst().map(Enum::name).orElse("PENDIENTE");
     }
 
     private Detalle detalle(Actividad actividad, List<PasoActividad> pasosActuales) {
-        var estado = estadoHoy(actividad);
+        var estado = estadoHoy(actividad, LocalDate.now(clock));
         var resumen = new ActividadResumen(actividad.getIdActividad(), actividad.getNombre(), actividad.getHora(),
             actividad.getIconoActividad() == null ? null : actividad.getIconoActividad().getCodigo());
         return new Detalle(resumen.idActividad(), actividad.getRevision(), resumen.nombre(), resumen.hora(), resumen.codigoIcono(),

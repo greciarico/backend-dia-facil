@@ -17,9 +17,10 @@ public class CreacionActividadTransaccionalService {
     private final PictogramaRepository pictogramas;
     private final EntityManager em;
     private final ActividadRepository actividades;
+    private final RegistroSeguimiento seguimiento;
     public CreacionActividadTransaccionalService(PerfilUsuarioRepository perfiles, IconoActividadRepository iconos,
-            PictogramaRepository pictogramas, EntityManager em, ActividadRepository actividades) {
-        this.perfiles = perfiles; this.iconos = iconos; this.pictogramas = pictogramas; this.em = em; this.actividades = actividades;
+            PictogramaRepository pictogramas, EntityManager em, ActividadRepository actividades, RegistroSeguimiento seguimiento) {
+        this.perfiles = perfiles; this.iconos = iconos; this.pictogramas = pictogramas; this.em = em; this.actividades = actividades; this.seguimiento = seguimiento;
     }
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
     public ActividadResumen crear(Integer cuidador, Integer perfilId, CrearActividad datos, Map<Integer, PictogramaArasaac> metadata) {
@@ -32,11 +33,15 @@ public class CreacionActividadTransaccionalService {
         var actividad = Actividad.crear(perfil, datos.nombre(), datos.horaLocal(), icono);
         em.persist(actividad);
         em.persist(VersionActividad.de(actividad));
+        var pasos = new ArrayList<PasoActividad>();
         for (int i = 0; i < datos.pasos().size(); i++) {
             var paso = datos.pasos().get(i);
-            em.persist(PasoActividad.crear(actividad, i + 1, paso.descripcion(), locales.get(paso.idArasaac())));
+            var entidad = PasoActividad.crear(actividad, i + 1, paso.descripcion(), locales.get(paso.idArasaac()));
+            em.persist(entidad);
+            pasos.add(entidad);
         }
         em.flush();
+        seguimiento.guardar(actividad, pasos);
         return new ActividadResumen(actividad.getIdActividad(), actividad.getNombre(), datos.hora(), icono.getCodigo());
     }
 

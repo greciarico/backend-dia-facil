@@ -53,13 +53,13 @@ class CreacionActividadMySqlTest {
                 var data=new CrearActividad("Test","07:00",code,List.of(new CrearActividad.Paso("Uno",arasaac),new CrearActividad.Paso("Dos",null))).validado();
                 var failure=mock(EntityManager.class,org.mockito.AdditionalAnswers.delegatesTo(em));
                 doAnswer(call->{if(call.getArgument(0) instanceof PasoActividad p && p.getOrden()==2)throw new IllegalStateException("injected"); em.persist(call.getArgument(0)); return null;}).when(failure).persist(any());
-                var failed=proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,failure,actividades),manager);
+                var failed=proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,failure,actividades,mock(RegistroSeguimiento.class)),manager);
                 assertThrows(IllegalStateException.class,()->failed.crear(ids.get(0),ids.get(1),data,Map.of(arasaac,PictogramaArasaac.de(arasaac,"Test"))));
                 long afterRollback=tx.execute(status->em.createQuery("select count(a) from Actividad a where a.perfilUsuario.idPerfilUsuario=:p",Long.class).setParameter("p",ids.get(1)).getSingleResult());
                 assertEquals(0L,afterRollback);
                 assertTrue(pictos.findByIdArasaacIn(List.of(arasaac)).isEmpty());
                 var remote=mock(PictogramaArasaacService.class); when(remote.resolver(arasaac)).thenReturn(PictogramaArasaac.de(arasaac,"Test"));
-                var transacciones = proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,em,actividades),manager);
+                var transacciones = proxied(new CreacionActividadTransaccionalService(profiles,icons,pictos,em,actividades,mock(RegistroSeguimiento.class)),manager);
                 var service=new CrearActividadService(new PerfilUsuarioService(profiles),icons,pictos,remote,transacciones);
                 var start=new CountDownLatch(1);
                 Callable<ActividadResumen> create=()->{assertTrue(start.await(10,TimeUnit.SECONDS));return service.crear(ids.get(0),ids.get(1),data);};
@@ -97,7 +97,7 @@ class CreacionActividadMySqlTest {
                     actividades.countByPerfilUsuario_IdPerfilUsuarioAndEstado(ids.get(1), EstadoActividad.ACTIVA));
                 assertEquals(10L, activas);
                 var edicion = new EdicionActividadService(em, profiles, icons, service, transacciones, manager,
-                    java.time.Clock.system(java.time.ZoneId.of("America/Lima")));
+                    java.time.Clock.system(java.time.ZoneId.of("America/Lima")), mock(RegistroSeguimiento.class));
                 var empezarEdicion = new CountDownLatch(1);
                 java.util.function.Function<String, Callable<String>> editar = nombre -> () -> {
                     assertTrue(empezarEdicion.await(10, TimeUnit.SECONDS));

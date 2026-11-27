@@ -33,7 +33,7 @@ class EdicionActividadServiceTest {
             when(em.createQuery(startsWith("select g.idProgresoPaso"), eq(Integer.class))).thenReturn(vacia);
             when(em.createQuery(startsWith("select s.idSolicitudAyuda"), eq(Integer.class))).thenReturn(ayuda);
             var service = new EdicionActividadService(em, perfiles, null, null, null,
-                mock(PlatformTransactionManager.class), Clock.systemUTC());
+                mock(PlatformTransactionManager.class), Clock.systemUTC(), mock(RegistroSeguimiento.class));
             assertEquals("ACTIVIDAD_MODIFICADA", assertThrows(RechazoActividad.class, () -> service.eliminar(3, 12, 7, 2)).codigo());
             var result = service.eliminar(3, 12, 7, 1);
             assertEquals("PENDIENTE", result.estadoHoy());
@@ -71,7 +71,7 @@ class EdicionActividadServiceTest {
             ReflectionTestUtils.setField(paso, "idPasoActividad", 5);
             return null;
         }).when(em).persist(isA(PasoActividad.class));
-        var service = new EdicionActividadService(em, perfiles, iconos, creacion, pasos, manager, clock);
+        var service = new EdicionActividadService(em, perfiles, iconos, creacion, pasos, manager, clock, mock(RegistroSeguimiento.class));
         var entrada = new EdicionActividadService.Entrada(1, "Después", "09:00", "bread",
             List.of(new EdicionActividadService.PasoEntrada("Paso nuevo", null, null)));
 
