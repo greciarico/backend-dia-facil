@@ -88,7 +88,7 @@ El mensaje de comprobación de códigos superada confirma solo ese requisito. El
 
 Pruebas de servicio, cadena Security/MockMvc, límites, esquema y comando de transición no necesitan BD local. `DispositivoMySqlTest` es opt-in con `DIAFACIL_TEST_MYSQL_URL`, `DIAFACIL_TEST_MYSQL_USER`, `DIAFACIL_TEST_MYSQL_PASSWORD`: exige una BD de pruebas existente `diafacil_test_*`, sin DDL. Comprueba transacción/rollback, concurrencia con el mismo secreto, múltiples dispositivos, conteo, renovación y revocación aislada. Nunca apuntarlo a la BD de desarrollo. La prueba limpia exclusivamente sus fixtures.
 
-E2 sigue pendiente; ejecución de actividades ya está implementada en su módulo.
+DF-12 incorpora la gestión del cuidador en el [contrato de vinculación](vinculacion-http.md). El GET de estado es de solo lectura y una credencial reconocida y retirada devuelve 401 `DISPOSITIVO_DESVINCULADO`.
 Salir del perfil conserva el dispositivo ACTIVO y pausa solo esta instalación.
 
 ### Resultado histórico de validación de E3, previo a Mi agenda

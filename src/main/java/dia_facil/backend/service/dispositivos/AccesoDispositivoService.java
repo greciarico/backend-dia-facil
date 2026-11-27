@@ -53,6 +53,8 @@ public class AccesoDispositivoService {
         if (c == null) throw RechazoDispositivo.invalida();
         if (c.getDispositivo() == null) {
             if (c.getPreparacionHasta() == null || !ahora().isBefore(c.getPreparacionHasta())) throw RechazoDispositivo.invalida();
+        } else if (c.getDispositivo().getEstado() == EstadoDispositivo.DESVINCULADO) {
+            throw new RechazoDispositivo(401, "DISPOSITIVO_DESVINCULADO", "Tu cuidador ha desvinculado este dispositivo.");
         } else if (c.getDispositivo().getEstado() != EstadoDispositivo.ACTIVO
             || c.getDispositivo().getPerfilUsuario().getEstado() != EstadoPerfil.ACTIVO) throw RechazoDispositivo.invalida();
     }
@@ -102,15 +104,16 @@ public class AccesoDispositivoService {
     public PerfilResumen perfilActivo(Identidad principal) {
         disponible();
         if (principal == null) throw RechazoDispositivo.invalida();
-        var c = em.find(CredencialDispositivo.class, principal.idCredencial()); validar(c);
+        var c = em.find(CredencialDispositivo.class, principal.idCredencial());
+        if (c != null && c.getDispositivo() != null) em.refresh(c.getDispositivo());
+        validar(c);
         if (c.getDispositivo() == null) throw RechazoDispositivo.invalida();
         return estado(c).perfil();
     }
-    @Transactional
+    @Transactional(readOnly = true)
     public Estado consultar(Long credencial) {
         disponible();
         var c = em.find(CredencialDispositivo.class, credencial); validar(c);
-        if (c.getDispositivo() != null) c.getDispositivo().setFechaUltimaActividad(ahora());
         return estado(c);
     }
     @Transactional(isolation = Isolation.READ_COMMITTED)

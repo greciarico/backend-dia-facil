@@ -109,7 +109,7 @@ una instalación nueva. No se añade entidad de instalación ni esquema adiciona
 DELETE `/api/dispositivos/vinculacion` queda limitado a cancelar preparaciones
 (`ROLE_VINCULACION_PENDIENTE`). Backend también rechaza con 403 el intento sobre
 un dispositivo ya vinculado después de bloquear/releer, protegiendo la carrera
-entre cancelación y vinculación. La futura desvinculación corresponde a E2.
+entre cancelación y vinculación. La desvinculación remota corresponde al cuidador mediante [DF-12](vinculacion-http.md).
 
 ## Validación
 
