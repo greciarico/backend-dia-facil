@@ -138,7 +138,7 @@ public class AccesoDispositivoService {
     private Estado estado(CredencialDispositivo c) {
         if (c.getDispositivo() == null) return new Estado("PENDIENTE", null);
         var p = c.getDispositivo().getPerfilUsuario();
-        return new Estado("VINCULADO", new PerfilResumen(p.getIdPerfilUsuario(), p.getNombre(), p.getAvatar()));
+        return new Estado("VINCULADO", new PerfilResumen(p.getIdPerfilUsuario(), p.getNombre(), p.getAvatar(), p.getFotoReferencia() == null ? null : true, p.getRevisionPerfil()));
     }
     private LocalDateTime ahora() { return em.createQuery("select local datetime", LocalDateTime.class).getSingleResult(); }
 }

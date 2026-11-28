@@ -23,6 +23,7 @@ class PerfilUsuarioRepositoryTest {
                 .addAnnotatedClass(PerfilUsuario.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.Actividad.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.EjecucionActividad.class)
+                .addAnnotatedClass(dia_facil.backend.persistence.entity.VersionActividad.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.IconoActividad.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.PalabraClaveIconoActividad.class)
                 .addAnnotatedClass(dia_facil.backend.persistence.entity.PlantillaActividad.class)

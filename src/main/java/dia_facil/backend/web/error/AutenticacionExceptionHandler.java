@@ -54,7 +54,7 @@ public class AutenticacionExceptionHandler extends ResponseEntityExceptionHandle
     public ResponseEntity<ProblemDetail> perfilInvalido(dia_facil.backend.service.perfiles.RechazoPerfil error, HttpServletRequest request) {
         int status = switch (error.codigo()) {
             case "PERFIL_NO_ENCONTRADO" -> 404;
-            case "LIMITE_PERFILES_ALCANZADO", "CODIGO_VINCULACION_CAMBIADO" -> 409;
+            case "LIMITE_PERFILES_ALCANZADO", "CODIGO_VINCULACION_CAMBIADO", "PERFIL_MODIFICADO" -> 409;
             case "RENOVACION_PREMATURA" -> 429;
             case "SERVICIO_NO_DISPONIBLE" -> 503;
             default -> 400;

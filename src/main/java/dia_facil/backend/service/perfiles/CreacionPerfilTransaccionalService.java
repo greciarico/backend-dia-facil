@@ -22,15 +22,26 @@ public class CreacionPerfilTransaccionalService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
     public PerfilResumen crear(Integer propietario, String nombre, String avatar) {
+        return crear(propietario, nombre, avatar, null);
+    }
+    @Transactional(readOnly = true)
+    public void validarCupo(Integer propietario) {
+        if (cuidadores.findById(propietario).filter(c -> c.getEstado() == EstadoCuidador.ACTIVO).isEmpty()) throw new SesionInvalidada(false);
+        if (perfiles.countByIdCuidadorAndEstado(propietario, EstadoPerfil.ACTIVO) >= PoliticaPerfiles.MAXIMO_ACTIVOS) throw RechazoPerfil.limite();
+    }
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
+    public PerfilResumen crear(Integer propietario, String nombre, String avatar, String referencia) {
         var cuidador = cuidadores.bloquearParaCrearPerfil(propietario).orElseThrow(() -> new SesionInvalidada(false));
         // The authentication filter may have loaded this entity before the lock was obtained.
         em.refresh(cuidador, LockModeType.PESSIMISTIC_WRITE);
         if (cuidador.getEstado() != EstadoCuidador.ACTIVO) throw new SesionInvalidada(false);
         if (perfiles.countByIdCuidadorAndEstado(propietario, EstadoPerfil.ACTIVO) >= PoliticaPerfiles.MAXIMO_ACTIVOS) throw RechazoPerfil.limite();
         var perfil = PerfilUsuario.crear(cuidador, nombre, avatar, codigos.generar());
+        dia_facil.backend.service.fotos.FotosPerfilService.confirmar(em, referencia);
+        perfil.setFotoReferencia(referencia);
         em.persist(perfil);
         em.persist(ConfiguracionPerfil.inicialPara(perfil));
         em.flush();
-        return new PerfilResumen(perfil.getIdPerfilUsuario(), perfil.getNombre(), perfil.getAvatar());
+        return new PerfilResumen(perfil.getIdPerfilUsuario(), perfil.getNombre(), perfil.getAvatar(), referencia == null ? null : true);
     }
 }

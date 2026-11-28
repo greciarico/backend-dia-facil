@@ -89,8 +89,10 @@ public class SesionCuidadorService {
             }
         }
     }
-    public record CuidadorResumen(Integer idCuidador, String nombre, String avatarId) {
-        public static CuidadorResumen de(Cuidador c) { return new CuidadorResumen(c.getIdCuidador(), c.getNombre(), c.getAvatarId()); }
+    public record CuidadorResumen(Integer idCuidador, String nombre, String avatarId, @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Boolean tieneFoto, @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Integer revision) {
+        public CuidadorResumen(Integer id, String nombre, String avatarId, Boolean tieneFoto) { this(id, nombre, avatarId, tieneFoto, null); }
+        public CuidadorResumen(Integer id, String nombre, String avatarId) { this(id, nombre, avatarId, null); }
+        public static CuidadorResumen de(Cuidador c) { return new CuidadorResumen(c.getIdCuidador(), c.getNombre(), c.getAvatarId(), c.getFotoReferencia() == null ? null : true, c.getRevisionDatosPersonales()); }
     }
     public record Tokens(String tokenType, String accessToken, Instant accessExpiresAt, String refreshToken, Instant refreshExpiresAt, Instant sessionExpiresAt) {
         @Override public String toString() { return "Tokens[contenido reservado]"; }

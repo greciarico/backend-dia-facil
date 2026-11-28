@@ -10,19 +10,30 @@ public class CrearPerfilService {
     public CrearPerfilService(CreacionPerfilTransaccionalService transacciones) { this.transacciones = transacciones; }
 
     public PerfilResumen crear(Integer propietario, String nombre, String avatar) {
-        var normalizado = nombre == null ? "" : nombre.strip();
-        if (normalizado.isBlank()) throw new RechazoPerfil("SOLICITUD_INVALIDA", "Ingresa el nombre de la persona.", "nombre");
-        if (normalizado.length() > 60) throw new RechazoPerfil("SOLICITUD_INVALIDA", "El nombre debe tener como máximo 60 caracteres.", "nombre");
+        return crear(propietario, nombre, avatar, null);
+    }
+    public void validarFoto(Integer propietario, String nombre) {
+        validarNombre(nombre);
+        transacciones.validarCupo(propietario);
+    }
+    public PerfilResumen crear(Integer propietario, String nombre, String avatar, String referencia) {
+        String normalizado = validarNombre(nombre);
         if (avatar != null && !CatalogoAvatares.ids().contains(avatar)) throw new RechazoPerfil("SOLICITUD_INVALIDA", "Selecciona un avatar del catálogo o utiliza la inicial.", "avatar");
         for (int intento = 0; intento < 3; intento++) {
-            try { return transacciones.crear(propietario, normalizado, avatar); }
+            try { return referencia == null ? transacciones.crear(propietario, normalizado, avatar) : transacciones.crear(propietario, normalizado, null, referencia); }
             catch (RuntimeException ex) {
-                if (esColisionCodigo(ex)) continue; // Retry only outside the rolled-back transaction.
+                if (esColisionCodigo(ex)) continue;
                 if (esLimiteSql(ex)) throw RechazoPerfil.limite();
                 throw ex;
             }
         }
         throw new RechazoPerfil("SERVICIO_NO_DISPONIBLE", "No pudimos crear el perfil. Inténtalo más tarde.", null);
+    }
+    private static String validarNombre(String nombre) {
+        var normalizado = nombre == null ? "" : nombre.strip();
+        if (normalizado.isBlank()) throw new RechazoPerfil("SOLICITUD_INVALIDA", "Ingresa el nombre de la persona.", "nombre");
+        if (normalizado.length() > 60) throw new RechazoPerfil("SOLICITUD_INVALIDA", "El nombre debe tener como máximo 60 caracteres.", "nombre");
+        return normalizado;
     }
     private static boolean esColisionCodigo(Throwable error) {
         for (var cause = error; cause != null; cause = cause.getCause()) {

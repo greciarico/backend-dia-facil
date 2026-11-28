@@ -31,6 +31,7 @@ public class DispositivoSecurityConfiguration {
         var bind = paths.matcher(HttpMethod.POST, "/api/dispositivos/vincular");
         var current = paths.matcher(HttpMethod.GET, "/api/dispositivos/vinculacion");
         var leave = paths.matcher(HttpMethod.DELETE, "/api/dispositivos/vinculacion");
+        var foto = paths.matcher(HttpMethod.GET, "/api/usuario/foto");
         var agenda = paths.matcher(HttpMethod.GET, "/api/usuario/agenda");
         var accesibilidad = paths.matcher(HttpMethod.GET, "/api/usuario/accesibilidad");
         var detalle = paths.matcher(HttpMethod.GET, "/api/usuario/actividades/{idActividad}");
@@ -76,7 +77,7 @@ public class DispositivoSecurityConfiguration {
             .authorizeHttpRequests(auth -> auth.requestMatchers(prepare).permitAll()
                 .requestMatchers(bind, current).hasAnyRole("VINCULACION_PENDIENTE", "USUARIO")
                 .requestMatchers(leave).hasRole("VINCULACION_PENDIENTE")
-                .requestMatchers(agenda, accesibilidad, detalle, guia, ejecucion, iniciar, avanzar, guiada, directa, ayuda, recuperarAyuda).hasRole("USUARIO").anyRequest().denyAll())
+                .requestMatchers(foto, agenda, accesibilidad, detalle, guia, ejecucion, iniciar, avanzar, guiada, directa, ayuda, recuperarAyuda).hasRole("USUARIO").anyRequest().denyAll())
             .csrf(csrf -> csrf.ignoringRequestMatchers(prepare, bind, leave, iniciar, avanzar, guiada, directa, ayuda))
             .addFilterBefore(filtro, AnonymousAuthenticationFilter.class)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

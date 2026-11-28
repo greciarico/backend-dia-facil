@@ -72,6 +72,13 @@ public class PerfilUsuario {
     @Column(name = "avatar", nullable = true, length = 255)
     private String avatar;
 
+    @Column(name = "foto_referencia", length = 36)
+    private String fotoReferencia;
+
+    @org.hibernate.annotations.ColumnDefault("1")
+    @Column(name = "revision_perfil", nullable = false)
+    private int revisionPerfil = 1;
+
     @Column(name = "codigo_vinculacion", nullable = false, length = 20)
     private String codigoVinculacion;
 
