@@ -59,6 +59,18 @@ public class AutenticacionCuidadorService {
             throw ex;
         }
     }
+    public void validarRegistroFoto(String comprobante, String nombre) {
+        transacciones.validarRegistro(acreditarRegistro(comprobante, nombre, null));
+    }
+
+    public SesionCuidadorService.Concesion registrarFoto(String comprobante, String nombre, String referencia) {
+        try { return transacciones.registrarFoto(acreditarRegistro(comprobante, nombre, null), nombre.strip(), referencia); }
+        catch (DataIntegrityViolationException error) {
+            if (esCorreoDuplicado(error)) throw new RechazoAutenticacion(Motivo.CUENTA_EXISTENTE);
+            throw error;
+        }
+    }
+
     private CriptografiaAutenticacion.Comprobante acreditarRegistro(String comprobante, String nombre, String avatarId) {
         final CriptografiaAutenticacion.Comprobante acreditacion;
         try {

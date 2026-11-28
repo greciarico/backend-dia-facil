@@ -329,3 +329,26 @@ Conservar también AGENTS raíz, documentacion-dia-facil y design junto a ambos
 repositorios. No clonar solo backend suponiendo que incluye recursos hermanos.
 No trasladar/publicar application-local.properties, secretos, tokens o contraseñas
 como documentación; preparar una configuración privada en el equipo de destino.
+
+
+## Fotografías privadas de perfil (DF-13.1)
+
+La integración de medios es interna a Spring Boot. Cloudinary recibe un JPEG normalizado de 512 × 512 mediante subida autenticada, sin metadatos de la imagen de entrada. Se aceptan JPEG y PNG estáticos de hasta 5 MiB y 24 megapíxeles. El recorte es centrado. El futuro selector aplicará la orientación de la toma antes de subirla. Los avatares, las iniciales y los contratos de perfiles conservan su comportamiento.
+
+1. Crear un entorno de desarrollo en Cloudinary y obtener cloud name, API key y API secret en **Settings → API Keys**. Usar imágenes sintéticas. Revisar acceso a la consola, retención y copias antes de utilizar fotos reales.
+2. Conservar el archivo privado existente. Incorporar en `application-local.properties` el bloque DF-13.1 de `application-local.example.properties` y cambiar `diafacil.cloudinary.enabled` a `true` cuando corresponda. Inyectar `DIAFACIL_CLOUDINARY_CLOUD_NAME`, `DIAFACIL_CLOUDINARY_API_KEY` y `DIAFACIL_CLOUDINARY_API_SECRET` al proceso backend. Se admite configurar los valores directamente en el archivo privado ignorado. La plantilla queda desactivada y Expo no recibe credenciales.
+3. En el entorno de Cloudinary con carpetas dinámicas, Spring envía `asset_folder` y un ID opaco bajo `diafacil/dev/pruebas`, `diafacil/dev/perfiles/cuidadores` o `diafacil/dev/perfiles/personas`. `diafacil.cloudinary.entorno=prod` separa las fotos de producción en la misma cuenta y bloquea el destino de pruebas. Con `dev` habilitado, el ensayo real carga `application-local.properties` desde la raíz del backend en un contexto sin datasource. Ejecutar en PowerShell:
+
+   ```powershell
+   $env:DIAFACIL_CLOUDINARY_SMOKE = 'true'
+   try {
+       .\mvnw.cmd '-Dtest=CloudinaryFotosTest#cicloRealConImagenSintetica' test
+   } finally {
+       Remove-Item Env:DIAFACIL_CLOUDINARY_SMOKE -ErrorAction SilentlyContinue
+   }
+   ```
+
+    La prueba genera una imagen sintética, comprueba acceso anónimo denegado y descarga autenticada, y solicita borrado en `finally`. Ante un fallo de limpieza, usar la referencia de prueba para retirar el recurso del entorno de desarrollo. Esta prueba necesita salida HTTPS e Internet, sin MySQL.
+4. Expo Go puede comprobar por LAN los flujos vigentes de avatar e inicial con el backend y MySQL local. El ensayo de foto se realiza desde el backend hasta que el primer formulario integre la selección y el guardado. En AWS, usar un entorno Cloudinary y credenciales separados, inyectados desde Secrets Manager por el rol de despliegue o ejecución con acceso acotado.
+
+Para el primer formulario que guarde fotos, añadir una referencia nullable y un registro persistente de medios. Reservar la referencia antes de subir. Conservar la anterior hasta confirmar la actualización y programar el borrado posterior. Reconciliar intentos inciertos por referencia y reintentar la limpieza de forma idempotente. La entrega proyectada verifica autorización en Spring y devuelve los bytes, sin exponer URLs de Cloudinary. DF-13.1 no aplica SQL ni expone rutas HTTP nuevas.

@@ -11,6 +11,8 @@ import static dia_facil.backend.service.auth.AutenticacionCuidadorService.*;
 
 /** Must be called through a Spring transactional proxy; REQUIRED / DEFAULT are deliberate. */
 public class AutenticacionCuidadorTransaccionalService {
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager em;
     private final CuidadorRepository cuidadores;
     private final CodigoAccesoRepository codigos;
     private final CriptografiaAutenticacion criptografia;
@@ -94,6 +96,16 @@ public class AutenticacionCuidadorTransaccionalService {
     @Transactional
     public Integer completarRegistro(CriptografiaAutenticacion.Comprobante comprobante, String nombre, String avatarId) {
         CatalogoAvatarCuidador.validar(avatarId);
+        return crearCuidador(comprobante, nombre, avatarId, null);
+    }
+
+    @Transactional
+    public SesionCuidadorService.Concesion registrarFoto(CriptografiaAutenticacion.Comprobante comprobante, String nombre, String referencia) {
+        return Objects.requireNonNull(sesiones).emitir(crearCuidador(comprobante, nombre, null, referencia));
+    }
+
+    @Transactional(readOnly = true)
+    public void validarRegistro(CriptografiaAutenticacion.Comprobante comprobante) {
         if (!criptografia.vigente(comprobante)) throw new RechazoAutenticacion(Motivo.COMPROBANTE_INVALIDO);
         var registro = codigos.findById(comprobante.idCodigo());
         if (registro.isEmpty() || !registro.get().getUsado()
@@ -103,7 +115,13 @@ public class AutenticacionCuidadorTransaccionalService {
         if (cuidadores.findByEmail(comprobante.email()).isPresent()) {
             throw new RechazoAutenticacion(Motivo.CUENTA_EXISTENTE);
         }
+    }
+
+    private Integer crearCuidador(CriptografiaAutenticacion.Comprobante comprobante, String nombre, String avatarId, String referencia) {
+        validarRegistro(comprobante);
+        dia_facil.backend.service.fotos.FotosPerfilService.confirmar(em, referencia);
         var cuidador = Cuidador.crear(comprobante.email(), nombre);
+        cuidador.setFotoReferencia(referencia);
         cuidador.setAvatarId(avatarId);
         return cuidadores.saveAndFlush(cuidador).getIdCuidador();
     }

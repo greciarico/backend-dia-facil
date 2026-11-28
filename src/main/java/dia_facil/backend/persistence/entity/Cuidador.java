@@ -52,6 +52,13 @@ public class Cuidador {
     @Column(name = "avatar_id", nullable = true, length = 32)
     private String avatarId;
 
+    @Column(name = "foto_referencia", length = 36)
+    private String fotoReferencia;
+
+    @org.hibernate.annotations.ColumnDefault("1")
+    @Column(name = "revision_datos_personales", nullable = false)
+    private int revisionDatosPersonales = 1;
+
     @Column(name = "email", nullable = false, length = 150)
     private String email;
 
