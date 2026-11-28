@@ -3,6 +3,8 @@ T	cuidador	Cuidador	id_cuidador
 C	cuidador	id_cuidador	INT	false	-	true	false
 C	cuidador	nombre	VARCHAR(100)	true	-	false	false
 C	cuidador	avatar_id	VARCHAR(32)	true	-	false	false
+C	cuidador	foto_referencia	VARCHAR(36)	true	-	false	false
+C	cuidador	revision_datos_personales	INT	false	1	false	false
 C	cuidador	email	VARCHAR(150)	false	-	false	false
 C	cuidador	estado	ENUM( 'ACTIVO', 'INACTIVO' )	false	'ACTIVO'	false	false
 C	cuidador	fecha_creacion	DATETIME	false	CURRENT_TIMESTAMP	false	false
@@ -21,6 +23,8 @@ C	perfil_usuario	id_perfil_usuario	INT	false	-	true	false
 C	perfil_usuario	id_cuidador	INT	false	-	false	false
 C	perfil_usuario	nombre	VARCHAR(60)	false	-	false	false
 C	perfil_usuario	avatar	VARCHAR(255)	true	-	false	false
+C	perfil_usuario	foto_referencia	VARCHAR(36)	true	-	false	false
+C	perfil_usuario	revision_perfil	INT	false	1	false	false
 C	perfil_usuario	codigo_vinculacion	VARCHAR(20)	false	-	false	false
 C	perfil_usuario	fecha_renovacion_codigo	DATETIME	true	-	false	false
 C	perfil_usuario	estado	ENUM( 'ACTIVO', 'INACTIVO' )	false	'ACTIVO'	false	false

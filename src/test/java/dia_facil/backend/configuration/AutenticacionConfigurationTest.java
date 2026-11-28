@@ -7,6 +7,7 @@ import dia_facil.backend.service.auth.AutenticacionCuidadorService;
 import dia_facil.backend.service.auth.AutenticacionCuidadorTransaccionalService;
 import dia_facil.backend.service.auth.CriptografiaAutenticacion;
 import dia_facil.backend.service.auth.EnvioCodigoAcceso;
+import jakarta.persistence.EntityManagerFactory;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.ZoneId;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.transaction.autoconfigure.TransactionAutoConfiguration;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -47,14 +49,15 @@ class AutenticacionConfigurationTest {
 
     private ApplicationContextRunner dependencias(ApplicationContextRunner runner, Manager manager,
             CuidadorRepository cuidadores, CodigoAccesoRepository codigos, EnvioCodigoAcceso envio) {
-        return runner.withBean(CuidadorRepository.class, () -> cuidadores)
-            .withBean(CodigoAccesoRepository.class, () -> codigos)
+        if (cuidadores != null) runner = runner.withBean(CuidadorRepository.class, () -> cuidadores);
+        if (codigos != null) runner = runner.withBean(CodigoAccesoRepository.class, () -> codigos);
+        if (manager != null) runner = runner.withBean(PlatformTransactionManager.class, () -> manager);
+        if (envio != null) runner = runner.withBean(EnvioCodigoAcceso.class, () -> envio);
+        return runner.withBean(EntityManagerFactory.class, () -> mock(EntityManagerFactory.class))
             .withBean(dia_facil.backend.persistence.repository.SesionCuidadorRepository.class,
                 () -> mock(dia_facil.backend.persistence.repository.SesionCuidadorRepository.class))
             .withBean(dia_facil.backend.persistence.repository.CredencialSesionCuidadorRepository.class,
-                () -> mock(dia_facil.backend.persistence.repository.CredencialSesionCuidadorRepository.class))
-            .withBean(PlatformTransactionManager.class, () -> manager)
-            .withBean(EnvioCodigoAcceso.class, () -> envio);
+                () -> mock(dia_facil.backend.persistence.repository.CredencialSesionCuidadorRepository.class));
     }
 
     private ApplicationContextRunner completo() {
@@ -125,26 +128,39 @@ class AutenticacionConfigurationTest {
             var otro = nombre.endsWith("otp-secret") ? "diafacil.auth.registration-secret" : "diafacil.auth.otp-secret";
             var runner = base().withPropertyValues("diafacil.auth.enabled=true", otro + "=" + OTP);
             dependencias(runner, new Manager(), mock(CuidadorRepository.class), mock(CodigoAccesoRepository.class),
-                mock(EnvioCodigoAcceso.class)).run(context -> assertNotNull(context.getStartupFailure()));
+                mock(EnvioCodigoAcceso.class)).run(context -> assertFalloConfiguracion(context.getStartupFailure(), nombre));
         }
         completo().withPropertyValues("diafacil.auth.registration-secret=" + OTP)
-            .run(context -> assertNotNull(context.getStartupFailure()));
+            .run(context -> assertFalloConfiguracion(context.getStartupFailure(), "dos claves distintas"));
         completo().withPropertyValues("diafacil.auth.zone=zona-invalida")
-            .run(context -> assertNotNull(context.getStartupFailure()));
+            .run(context -> assertFalloConfiguracion(context.getStartupFailure(), "diafacil.auth.zone"));
     }
 
     @Test void moduloActivadoExigeRepositoriosGestorYEnvio() {
-        activado().withBean(CuidadorRepository.class, () -> mock(CuidadorRepository.class))
-            .withBean(CodigoAccesoRepository.class, () -> mock(CodigoAccesoRepository.class))
-            .withBean(PlatformTransactionManager.class, Manager::new)
-            .run(context -> assertNotNull(context.getStartupFailure()));
-        activado().withBean(CuidadorRepository.class, () -> mock(CuidadorRepository.class))
-            .withBean(CodigoAccesoRepository.class, () -> mock(CodigoAccesoRepository.class))
-            .withBean(EnvioCodigoAcceso.class, () -> mock(EnvioCodigoAcceso.class))
-            .run(context -> assertNotNull(context.getStartupFailure()));
-        activado().withBean(PlatformTransactionManager.class, Manager::new)
-            .withBean(EnvioCodigoAcceso.class, () -> mock(EnvioCodigoAcceso.class))
-            .run(context -> assertNotNull(context.getStartupFailure()));
+        dependencias(activado(), new Manager(), mock(CuidadorRepository.class), mock(CodigoAccesoRepository.class), null)
+            .run(context -> assertFaltaBean(context.getStartupFailure(), EnvioCodigoAcceso.class));
+        dependencias(activado(), null, mock(CuidadorRepository.class), mock(CodigoAccesoRepository.class), mock(EnvioCodigoAcceso.class))
+            .run(context -> assertFaltaBean(context.getStartupFailure(), PlatformTransactionManager.class));
+        dependencias(activado(), new Manager(), null, mock(CodigoAccesoRepository.class), mock(EnvioCodigoAcceso.class))
+            .run(context -> assertFaltaBean(context.getStartupFailure(), CuidadorRepository.class));
+        dependencias(activado(), new Manager(), mock(CuidadorRepository.class), null, mock(EnvioCodigoAcceso.class))
+            .run(context -> assertFaltaBean(context.getStartupFailure(), CodigoAccesoRepository.class));
+    }
+
+    private static Throwable causaRaiz(Throwable fallo) {
+        assertNotNull(fallo);
+        while (fallo.getCause() != null) fallo = fallo.getCause();
+        return fallo;
+    }
+
+    private static void assertFalloConfiguracion(Throwable fallo, String motivo) {
+        var raiz = assertInstanceOf(IllegalArgumentException.class, causaRaiz(fallo));
+        assertTrue(raiz.getMessage().contains(motivo), () -> "Causa inesperada: " + raiz.getMessage());
+    }
+
+    private static void assertFaltaBean(Throwable fallo, Class<?> tipo) {
+        var raiz = assertInstanceOf(NoSuchBeanDefinitionException.class, causaRaiz(fallo));
+        assertEquals(tipo, raiz.getBeanType());
     }
 
     @Test void fachadaEnsambladaConfirmaIntentosYRevierteFallosTecnicos() {
